@@ -35,7 +35,10 @@ class AuthController extends Controller
         ]);
         $profile = Profile::create([
             'user_id'=>$user->id,
-            'nickname'=>$user->name
+            'nickname'=>$user->name,
+            'fontColor'=>'#000000',
+            'borderColor'=> '#000000',
+            'picture'=>'655f7aa731654_1700756135.png'
         ]);
         
         return $this->success([

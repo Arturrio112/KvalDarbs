@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\ConvoController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -48,4 +49,11 @@ Route::group(['middleware'=>['auth:sanctum']], function(){
     Route::get('/search', [UserController::class, 'searchUser']);
     Route::post('/edit-profile/{id}', [UserController::class, 'editProfile']);
     Route::get('/file', [PostController::class, 'getFile']);
+    Route::get('/{id}/convo',[ConvoController::class, 'getUserConvos']);
+    Route::post('/convo/new',[ConvoController::class, 'startNewConvo']);
+    Route::post('/convo/{id}/message/new', [ConvoController::class, 'postNewMessage']);
+    Route::get('/users',[UserController::class, 'getAllUsers']);
+    Route::delete('/convo/{id}', [ConvoController::class, 'deleteConvo']);
+    Route::get('/search/mention', [UserController::class, 'findUserForMention']);
+    Route::get('/get/mention', [UserController::class, 'getMentionedUsers']);
 });

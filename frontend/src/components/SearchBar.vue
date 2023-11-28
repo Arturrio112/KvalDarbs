@@ -60,7 +60,7 @@ const handleProfile = (id)=>{
               outline-none
             "
             type="text"
-            placeholder="Search Twitter"
+            placeholder="Search for Users"
             v-model="searchQuery"
             @input="performUserSearch"
           >
@@ -86,6 +86,7 @@ const handleProfile = (id)=>{
             Users
           </div>
           <div
+          v-for="user in searchResults" :key="user.id"
             class="
               h-[60px]
               hover:bg-gray-500
@@ -102,16 +103,14 @@ const handleProfile = (id)=>{
               h-[80px]
               py-3
             ">
-              <div v-for="user in searchResults" :key="user.id">
-                  <div class="w-full" @click="handleProfile(user.id)">
-                    <div class="text-[14px] text-gray-400">@{{user.name}}</div>
-                    <div class="w-full text-black font-extrabold mb-6 text-[17px]">
-                      <div class="flex">
-                        {{user.profile.nickname}}
-                        <CheckDecagram v-if="user.profile.verified" fillColor="#1DA1F2" :size="18"/>
-                      </div>
-                    </div>
+              <div class="w-full" @click="handleProfile(user.id)">
+                <div class="text-[14px] text-gray-400">@{{user.name}}</div>
+                <div class="w-full text-black font-extrabold mb-6 text-[17px]">
+                  <div class="flex">
+                    {{user.profile.nickname}}
+                    <CheckDecagram v-if="user.profile.verified" fillColor="#fca521" :size="18"/>
                   </div>
+                </div>
               </div>
             </div>
           </div>

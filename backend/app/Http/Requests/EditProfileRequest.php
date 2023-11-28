@@ -27,6 +27,8 @@ class EditProfileRequest extends FormRequest
         return [
             'profileName' => 'required|string',
             'profilePicture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Assuming a maximum file size of 2MB
+            'fontColor'=> 'nullable|string',
+            'borderColor'=> 'nullable|string',
             'profileId' => 'required|exists:profile,id',
             'userId' => 'required|exists:user,id',
         ];

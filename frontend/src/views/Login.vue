@@ -5,9 +5,17 @@
       return {
         email: '',
         password: '',
+        loginError: ''
       };
     },
+    created() {
+      // This code will be executed when the component is created
+      this.deleteAuthToken();
+    },
     methods: {
+      async deleteAuthToken() {
+        localStorage.removeItem('authToken');
+      },
       async handleSubmit(event) {
         event.preventDefault();
           const userData = {
@@ -28,6 +36,7 @@
               })
             }).catch((err)=>{
               console.log('Something went wrong', err);
+              this.loginError = 'Email or password is incorrect'
           })
       },
     }
@@ -36,8 +45,8 @@
 
 <template>
   <div class="flex h-screen justify-center items-center bg-gray-100">
-    <div class="bg-white p-8 rounded-lg shadow-md w-5/6">
-      <h1 class="text-2xl font-bold mb-4 text-center">Sign in to Twitter</h1>
+    <div class="bg-white p-8 rounded-lg shadow-md w-5/6 max-w-[1000px]">
+      <h1 class="text-2xl font-bold mb-4 text-center">Sign in to SocNet</h1>
       <form @submit="handleSubmit">
         <!-- Email Field -->
         <div class="mb-4">
@@ -51,6 +60,9 @@
         </div>
         <!-- Submit Button -->
         <button type="submit" class="mb-4 block mx-auto px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300 w-2/3">Sign in</button>
+        <div class="mt-4 mb-4" v-if="loginError">
+          <p class="text-red-500">{{ loginError }}</p>
+        </div>
         <div class="mb-4">
           <p class="text-slate-400">Don't have an account? <router-link to="/signup" class="text-blue-500 underline">Sign up</router-link></p>
         </div>

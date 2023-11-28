@@ -2,16 +2,21 @@
 
 namespace App\Http\Requests;
 
+use App\Models\UserConversation;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCommentRequest extends FormRequest
+class DeleteConvoRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
+        $userId = $this->input('user_id');
+        $convoId = $this->input('convo_id');
+        return UserConversation::where('conversation_id', $convoId)
+        ->where('user_id', $userId)
+        ->exists();;
     }
 
     /**
@@ -22,11 +27,8 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'text' => 'required|string|max:255',
-            'fileFormat' => 'nullable|string|max:255', 
-            'media' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048', 
             'user_id' => 'required|exists:user,id',
-            'post_id' => 'required|exists:post,id'
+            'convo_id' => 'required|exists:convo,id'
         ];
     }
 }

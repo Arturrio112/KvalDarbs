@@ -2,19 +2,20 @@
   import {ref, computed, onMounted, watchEffect} from 'vue'
   import { useRouter } from 'vue-router';
   import axios from 'axios';
-  import Twitter from 'vue-material-design-icons/Twitter.vue';
-  import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue';
+  import Spider from 'vue-material-design-icons/Spider.vue';
   import Feather from 'vue-material-design-icons/Feather.vue';
   import Close from 'vue-material-design-icons/Close.vue';
   import ChevronDown from 'vue-material-design-icons/ChevronDown.vue';
   import Earth from 'vue-material-design-icons/Earth.vue';
   import ImageOutline from 'vue-material-design-icons/ImageOutline.vue';
-  import FileGifBox from 'vue-material-design-icons/FileGifBox.vue';
   import Emoticon from 'vue-material-design-icons/Emoticon.vue';
   import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue';
   import MenuItem from '../components/MenuItem.vue'
   import Post from '../components/Post.vue'
   import SearchBar from '../components/SearchBar.vue'
+  import data from "emoji-mart-vue-fast/data/all.json"
+  import "emoji-mart-vue-fast/css/emoji-mart.css"
+  import { Picker, EmojiIndex } from "emoji-mart-vue-fast/src"
   let textarea = ref(null)
   let createPost = ref(false)
   let postsLoaded = ref(false)
@@ -22,6 +23,7 @@
   let followedPosts=ref([])
   let file=ref('')
   let posts=ref([])
+  const newPostErrors = ref([])
   let showUpload = ref('')
   let uploadType = ref('')
   const user = ref(null);
@@ -29,7 +31,9 @@
   const userDataLoaded = ref(false);
   const router = useRouter();
   let activeSection = ref('for_you')
-  
+  let showEmojiPicker = ref(false)
+  let emojiIndex = new EmojiIndex(data);
+  const mentionResults = ref([]);
   const userId = computed(() => (user.value ? user.value.user_id : null));
   onMounted(()=>{
     const token = localStorage.getItem('authToken')
@@ -95,23 +99,62 @@
     })
   }) 
   const textareaInput = (e)=>{
+    const token = localStorage.getItem('authToken')
     textarea.value.style.height = "auto"
     textarea.value.style.height = `${e.target.scrollHeight}px`
+    const words = post.value.split(' ');
+    const lastWord = words[words.length - 1];
+
+    if (lastWord.startsWith('@') && lastWord.length > 1&&words.length>0) {
+      const query = lastWord.substring(1); // Remove "@" symbol
+      axios.get('http://localhost:8000/api/search/mention',{ 
+        params: {
+           query 
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+      .then((response) => {
+        mentionResults.value = response.data.data.users;
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+    } else {
+      mentionResults.value = []; // Clear mention results if no "@" symbol
+    }
+  }
+  const insertMention = (user) => {
+    const currentPost = post.value;
+    const words = currentPost.split(' ');
+    const lastWord = words[words.length - 1];
+    const mentionPrefixRemoved = lastWord.startsWith('@') ? lastWord.substring(1) : lastWord;
+    const newPost = currentPost.slice(0, -mentionPrefixRemoved.length) + user.name + ' ';
+    post.value = newPost;
+    mentionResults.value = [];
+    textarea.value.focus();
+  };
+  const isAllowedType = (type)=>{
+    const allowedTypes = ['jpeg', "jpg", 'png', 'gif'];
+
+    const fileExtension = type.split('/')[1];
+
+    return allowedTypes.includes(fileExtension);
   }
   const getFile = (e)=>{
     const selectedFile = e.target.files[0];
-    
+    newPostErrors.value = []
     if (selectedFile) {
-        const allowedFormats = ["jpeg", "jpg", "png", "mp4", "gif"];
         const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
-
-        if (allowedFormats.includes(fileExtension)) {
+        const fileType = selectedFile.type
+        if (isAllowedType(fileType)) {
             file.value = selectedFile;
             showUpload.value = URL.createObjectURL(selectedFile);
             uploadType.value = fileExtension;
         } else {
             // Display an error to the user, indicating invalid file format
-            alert("Invalid file format. Allowed formats: jpeg, png, mp4, gif.");
+            newPostErrors.value.push('Added file format is not supported, supported file formats - jpeg, png, jpg, gif ')
             // Clear the input element
             e.target.value = null;
             // Reset values to indicate no selected media
@@ -127,6 +170,12 @@
     showUpload.value=''
     uploadType.value=''
   }
+  const toggleEmojiPicker = () =>{
+    showEmojiPicker.value = !showEmojiPicker.value;
+  }
+  const handleEmojiClick = (emoji) => {
+    post.value += emoji.native;
+  };
   const handlePostSubmit = async () => {
     const token = localStorage.getItem('authToken');
     
@@ -136,7 +185,15 @@
         });
         return;
     }
-    
+    post.value = post.value.trim()
+    if(newPostErrors.length>0){
+        return
+    }
+    newPostErrors.value = []
+    if(post.value == ''){
+        newPostErrors.value.push('Text cannot be empty')
+        return
+    }
     const formData = new FormData(); // Create a FormData object
     
     formData.append('text', post.value);
@@ -177,13 +234,16 @@
     <div class="max-w-[1400px] flex mx-auto">
       <div class="lg:w-3/12 w-[60px] h-[100vh] max-w-[350px] lg:px-4 lg:mx-auto">
         <div class="p-2 px-3 mb-4">
-          <Twitter fillColor="#1DA1F2" :size="37"/>
+          <Spider fillColor="#fca521" :size="37"/>
         </div>
         <template v-if="userDataLoaded">
         <MenuItem iconString="Home"/>
-        <MenuItem iconString="Explore"/>
-        <MenuItem iconString="Notifications"/>
-        <MenuItem iconString="Messages"/>
+        <router-link :to="'/explore'">
+          <MenuItem iconString="Explore"/>
+        </router-link>
+        <router-link :to="'/messages'">
+          <MenuItem iconString="Messages"/>
+        </router-link>
         <router-link :to="`/user/${userId}`">
           <MenuItem iconString="Profile"/>
         </router-link>
@@ -197,7 +257,7 @@
             text-black
             font-extrabold
             text-[22px]
-            bg-[#1DA1F2]
+            bg-[#fca521]
             p-3
             px-3
             rounded-full
@@ -237,7 +297,7 @@
               >
                 <div
                   @click="activeSection = 'for_you'"
-                  :class="{ 'border-b-[#1DA1F2]': activeSection === 'for_you' }"
+                  :class="{ 'border-b-[#fca521]': activeSection === 'for_you' }"
                   class="
                     inline-block
                     text-center
@@ -246,7 +306,7 @@
                     h-[60px]
                   "
                 >
-                  <div class="my-auto mt-4">For you</div>
+                  <div class="my-auto mt-4">All</div>
                 </div>
               </div>
               <div
@@ -270,7 +330,7 @@
               >
                 <div
                   @click="activeSection = 'following'"
-                  :class="{ 'border-b-[#1DA1F2]': activeSection === 'following' }"
+                  :class="{ 'border-b-[#fca521]': activeSection === 'following' }"
                   class="
                     inline-block
                     text-center
@@ -288,10 +348,9 @@
         <div class="
           absolute
           top-0
-          
           h-full
-          overflow-auto
-          scrollbar-hide
+          overflow-y-scroll
+          no-scrollbar
           w-full      
         "
         >
@@ -366,7 +425,7 @@
           <button
             @click="handlePostSubmit"
            :disabled="!post"
-           :class="post ? 'bg-[#1DA1F2] text-white' : 'bg-[#124D77] text-gray-400'"
+           :class="post ? 'bg-[#fca521] text-white' : 'bg-[#124D77] text-gray-400'"
            class="
             md:hidden
             font-extrabold
@@ -393,8 +452,8 @@
                 border-white
                 rounded-full
               ">
-                <span class="text-[#1DA1F2] p-0.5 pl-3.5 font-extrabold">Everyone</span>
-                <ChevronDown class="pr-2" fillColor="#1DA1F2" :size="25"/>
+                <span class="text-[#fca521] p-0.5 pl-3.5 font-extrabold">Everyone</span>
+                <ChevronDown class="pr-2" fillColor="#fca521" :size="25"/>
               </div>
             </div>
             <div>
@@ -418,20 +477,41 @@
                 ">
               
               </textarea>
+              <div class="relative mb-3">
+                <div class="absolute text-black left-0 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10" v-if="mentionResults.length > 0">
+                  <ul class="py-1">
+                    <li v-for="user in mentionResults" :key="user.id" @click="insertMention(user)" class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+                      {{ user.name }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div class="w-full"  v-if="showEmojiPicker">
+                <Picker
+                  :data="emojiIndex" 
+                  set="twitter" 
+                  @select="handleEmojiClick" 
+                />
+              </div>
             </div>
             <div class="w-full">
               <video controls v-if="uploadType === 'mp4'" :src="showUpload" class="rounded-xl overflow-auto"/>
               <img v-else :src="showUpload" class="rounded-xl min-w-full">
             </div>
+            <div v-if="newPostErrors.length > 0">
+                <div v-for="error in newPostErrors" :key="error" >
+                  <div class="text-rose-600">{{ error }}</div>
+              </div>
+            </div>
             <div class="
               flex
               py-2
               items-center
-              text-[#1DA1F2]
+              text-[#fca521]
               font-extrabold
               
             ">
-              <Earth class="pr-2" fillColor="#1DA1F2" :size="20"/>Everyone can reply
+              <Earth class="pr-2" fillColor="#fca521" :size="20"/>Everyone can reply
             </div>
             <div class="border-b border-b-gray-700"></div>
             <div class="
@@ -449,33 +529,24 @@
                   cursor-pointer
                 ">
                   <label for="fileUpload" class="cursor-pointer">
-                    <ImageOutline fillColor="#1DA1F2" :size="25"/>
+                    <ImageOutline fillColor="#fca521" :size="25"/>
                   </label>
                   <input type="file" id="fileUpload" class="hidden" @change="getFile">
                 </div>
-                <div class="
+                <div @click="toggleEmojiPicker" class="
                   hover:bg-gray-800
                   inline-block
                   p-2
                   rounded-full
                   cursor-pointer
                 ">
-                  <FileGifBox fillColor="#1DA1F2" :size="25"/>
-                </div>
-                <div class="
-                  hover:bg-gray-800
-                  inline-block
-                  p-2
-                  rounded-full
-                  cursor-pointer
-                ">
-                    <Emoticon fillColor="#1DA1F2" :size="25"/>
+                    <Emoticon fillColor="#fca521" :size="25"/>
                 </div>
               </div>
               <button
                 @click="handlePostSubmit"
                 :disabled="!post"
-                :class="post ? 'bg-[#1DA1F2] text-white' : 'bg-[#124D77] text-gray-400'"
+                :class="post ? 'bg-[#fca521] text-white' : 'bg-[#124D77] text-gray-400'"
                 class="
                   hidden
                   md:block

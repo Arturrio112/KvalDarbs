@@ -9,7 +9,7 @@
   import Post from '../components/Post.vue'
   import Repost from '../components/Repost.vue'
   import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue';
-  import Twitter from 'vue-material-design-icons/Twitter.vue';
+  import Spider from 'vue-material-design-icons/Spider.vue';
   import Edit from 'vue-material-design-icons/AccountEdit.vue';
   import SearchBar from '../components/SearchBar.vue'
   import Close from 'vue-material-design-icons/Close.vue';
@@ -28,8 +28,11 @@
   let repostsLoaded = ref(false)
   let openOptions = ref(false);
   let openEdit= ref(false)
+  const editProfileErrors = ref([])
   const editedProfilePicture = ref(null); // Add this
   const editedProfileName = ref('');
+  const fontColor = ref('');
+  const borderColor = ref('')
   const profilePictureInput = ref(null);
   onMounted(()=>{
     const token = localStorage.getItem('authToken')
@@ -73,6 +76,8 @@
         }
       }).then((res)=>{
         profile.value = res.data.data.user
+        fontColor.value = res.data.data.user.profile.fontColor ;
+        borderColor.value = res.data.data.user.profile.borderColor ;
         console.log(res)
       }).catch((err)=>{
         console.error('Error fetching data', err);
@@ -161,6 +166,7 @@
                 }
             });
             profile.value.followers.push(response.data.data.follow)
+            profile.value.followers_count +=1
             console.log(response);
         } else {
             // Unfollow the user
@@ -174,6 +180,7 @@
             const followerIndex = profile.value.followers.findIndex(follower => follower.follower_id === userId);
             if (followerIndex !== -1) {
                 profile.value.followers.splice(followerIndex, 1);
+                profile.value.followers_count -=1
             }
         }
         
@@ -191,35 +198,79 @@
   function onProfilePictureChange() {
     editedProfilePicture.value = profilePictureInput.value.files[0];
   }
-  async function handleEdit(nickname) {
+  const isAllowedType = (type)=>{
+    const allowedTypes = ['jpeg', "jpg", 'png', 'gif'];
+
+    const fileExtension = type.split('/')[1];
+
+    return allowedTypes.includes(fileExtension);
+  }
+  const handleSubmit =  () =>{
+    editProfileErrors.value = []
+    handleEdit(profile.value.profile.nickname)
+  }
+  function handleEdit(nickname) {
     console.log(nickname)
+    editProfileErrors.value = []
     const token = localStorage.getItem('authToken');
     const formData = new FormData();
-    if (editedProfilePicture.value) {
+    if (editedProfilePicture.value && !isAllowedType(editedProfilePicture.value.type)) {
+      editProfileErrors.value.push('Added file format is not supported, supported file formats - jpeg, png, jpg, gif ');
+      console.log('pic err')
+    }
+    if(editedProfilePicture.value ){
       formData.append('profilePicture', editedProfilePicture.value);
     }
+
+    if (fontColor.value && !isValidHexColor(fontColor.value)) {
+      editProfileErrors.value.push('Invalid Font color value');
+      console.log('font err')
+    }
+
+    if (borderColor.value && !isValidHexColor(borderColor.value)) {
+      editProfileErrors.value.push('Invalid Border color value');
+      console.log('border err')
+    }
+
+    if (editedProfileName.value) {
+      editedProfileName.value = editedProfileName.value.trim();
+      if (editedProfileName.value === '') {
+        editProfileErrors.value.push('Profile name cannot be empty');
+        console.log('name err')
+      }
+    }
+    if (editProfileErrors.value.length > 0) {
+      // If there are errors, do not proceed with form submission
+      editedProfilePicture.value = null
+      fontColor.value = profile.value.profile.fontColor
+      borderColor.value = profile.value.profile.borderColor
+      editedProfileName.value = ''
+      console.log('err occured')
+      return;
+    }
+    console.log(fontColor.value)
     formData.append('profileName', editedProfileName.value || nickname);
+    formData.append('borderColor', borderColor.value || profile.value.profile.borderColor);
+    formData.append('fontColor',fontColor.value || profile.value.profile.fontColor)
     formData.append('userId', userId)
     formData.append('profileId', parseInt(profileId))
     console.log(userId, profileId)
     console.log(editedProfileName.value, editedProfilePicture.value)
-    try {
-      const response = await axios.post(`http://localhost:8000/api/edit-profile/${profileId}`, formData, {
+     axios.post(`http://localhost:8000/api/edit-profile/${profileId}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`
         },
-      });
-
-      // Handle the response, maybe show a success message
-      console.log(response);
-
-      // Close the edit form
-      openEdit.value = false;
-      window.location.reload();
-      // You may want to update the profile data here if needed
-    } catch (error) {
+      }).then((response)=>{
+        console.log(response);
+        openEdit.value = false;
+        window.location.reload();
+      }).catch((error) =>{
       console.error('Error editing profile', error);
-    }
+    })
+  }
+  function isValidHexColor(color) {
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+    return hexColorRegex.test(color);
   }
 </script>
 
@@ -228,15 +279,18 @@
     <div class="max-w-[1400px] flex mx-auto">
       <div class="lg:w-3/12 w-[60px] h-[100vh] max-w-[350px] lg:px-4 lg:mx-auto">
         <div class="p-2 px-3 mb-4">
-          <Twitter fillColor="#1DA1F2" :size="37"/>
+          <Spider fillColor="#fca521" :size="37"/>
         </div>
         <template v-if="userDataLoaded">
         <router-link :to="'/'">
           <MenuItem iconString="Home"/>
         </router-link>
-        <MenuItem iconString="Explore"/>
-        <MenuItem iconString="Notifications"/>
-        <MenuItem iconString="Messages"/>
+        <router-link :to="'/explore'">
+          <MenuItem iconString="Explore"/>
+        </router-link>
+        <router-link :to="'/messages'">
+          <MenuItem iconString="Messages"/>
+        </router-link>
         <router-link :to="`/user/${userId}`">
           <MenuItem iconString="Profile"/>
         </router-link>
@@ -251,8 +305,13 @@
                 <ArrowLeft fillColor="#000000" :size="28" class="rounded-full hover:bg-gray-300 transition duration-200 ease-in-out block cursor-pointer mr-2"/>
               </router-link>
               <div class="flex">
-                {{profile.profile.nickname }}
-                <CheckDecagram v-if="profile.profile.verified" fillColor="#1DA1F2" :size="18"/>
+                <span v-if="profile.profile.fontColor" :style="{ color: isValidHexColor(profile.profile.fontColor) ? profile.profile.fontColor : '#000000' }">
+                  {{profile.profile.nickname }}
+                </span>
+                <span v-else>
+                  {{profile.profile.nickname }}
+                </span>
+                <CheckDecagram v-if="profile.profile.verified" fillColor="#fca521" :size="18"/>
               </div>
             </div>
             <div class="flex justify-between">
@@ -262,6 +321,7 @@
                   :src="profile.profile.picture"
                   alt="Profile Picture"
                   class="w-[100px] h-[100px] rounded-full object-cover mr-2"
+                  :style="{ borderColor: `${profile.profile.borderColor}`, borderWidth: '2px', borderStyle: 'solid' }"
                 />
                 <img
                   v-else
@@ -272,8 +332,13 @@
                 <div>
                   <div class="text-xl font-extrabold mt-4">
                     <div class="flex">
-                      {{profile.profile.nickname}}
-                      <CheckDecagram v-if="profile.profile.verified" fillColor="#1DA1F2" :size="18"/>
+                      <span v-if="profile.profile.fontColor" :style="{ color: isValidHexColor(profile.profile.fontColor) ? profile.profile.fontColor : '#000000' }">
+                        {{profile.profile.nickname }}
+                      </span>
+                      <span v-else>
+                        {{profile.profile.nickname }}
+                      </span>
+                      <CheckDecagram v-if="profile.profile.verified" fillColor="#fca521" :size="18"/>
                     </div>
                   </div>
                   <div class="text-gray-600">@{{ profile.name }}</div>
@@ -285,6 +350,7 @@
                   rounded-full
                   cursor-pointer
                   relative
+                  mr-2
                 ">
                   <button type="button" class="block p-2">
                     <DotsHorizontal @click="toggleOpenOptions"/>
@@ -405,7 +471,7 @@
               >
                 <div
                   @click="activeSection = 'posts'" 
-                  :class="{ 'border-b-[#1DA1F2]': activeSection === 'posts' }"  
+                  :class="{ 'border-b-[#fca521]': activeSection === 'posts' }"  
                   class="
                   inline-block
                   text-center
@@ -439,7 +505,7 @@
               >
                 <div
                   @click="activeSection = 'reposts'" 
-                  :class="{ 'border-b-[#1DA1F2]': activeSection === 'reposts' }"  
+                  :class="{ 'border-b-[#fca521]': activeSection === 'reposts' }"  
                   class="
                   inline-block
                   text-center
@@ -457,9 +523,9 @@
           absolute
           top-0
           h-full
-          overflow-auto
-          scrollbar-hide
-          w-full      
+          overflow-y-scroll
+          no-scrollbar
+          w-full        
         "
         >
           <div v-if="postsLoaded && userDataLoaded && activeSection==='posts'">
@@ -489,14 +555,14 @@
         <SearchBar/>
       </div>
     </div>
-    <div id="editOverlay" v-if="openEdit">
+    <div id="editOverlay" v-if="openEdit" class="fixed top-0 left-0 w-full h-screen z-20">
       <div class="fixed inset-0 flex items-center justify-center">
         <div class="bg-white w-96 p-6 rounded-lg shadow-lg">
           <div class="flex justify-between">
             <h2 class="text-2xl font-semibold mb-4">Edit Profile</h2>
             <Close fillColor="#000000" :size="28" class="cursor-pointer" @click="toggleEdit"/>
           </div>
-          <form @submit.prevent="handleEdit(profile.profile.nickname)">
+          <div>
             <div class="mb-4">
               <label for="profilePicture" class="block text-gray-800 font-semibold">Profile Picture</label>
               <input
@@ -518,10 +584,33 @@
                 :placeholder= "profile.profile.nickname" 
               />
             </div>
-            <div class="text-right">
-              <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-full">Save</button>
+            <div class="mb-4">
+              <label for="fontColor" class="block text-gray-800 font-semibold">Font color</label>
+              <input
+                type="color"
+                id="fontColor"
+                v-model="fontColor"
+                class="border-gray-300 rounded-lg p-2 w-full cursor-pointer"
+              />
             </div>
-          </form>
+            <div class="mb-4">
+              <label for="borderColor" class="block text-gray-800 font-semibold">Border color</label>
+              <input
+                type="color"
+                id="borderColor"
+                v-model="borderColor"
+                class="border-gray-300 rounded-lg p-2 w-full cursor-pointer"
+              />
+            </div>
+            <div class="text-right">
+              <button @click="handleSubmit" class="bg-blue-500 text-white px-4 py-2 rounded-full">Save</button>
+            </div>
+            <div v-if="editProfileErrors.length > 0">
+              <div v-for="error in editProfileErrors" :key="error" >
+                <div class="text-rose-600">{{ error }}</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

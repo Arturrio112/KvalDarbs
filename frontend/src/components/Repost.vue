@@ -45,7 +45,7 @@ const handleDelete = () => {
                 <Sync class="pr-2" fillColor="gray" :size="18"/>
                 <span class="font-extrabold text-gray">{{repost.user.profile.nickname}} reposted</span>
             </div>
-            <div  class="
+            <div v-if="repost.user_id == userId" class="
                 hover:bg-gray-400
                 rounded-full
                 relative

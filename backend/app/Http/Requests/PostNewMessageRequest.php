@@ -2,16 +2,23 @@
 
 namespace App\Http\Requests;
 
+use App\Models\UserConversation;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCommentRequest extends FormRequest
+class PostNewMessageRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return true;
+        $userId = $this->input('user_id');
+        $conversationId = $this->input('conversation_id');
+
+        // Check if there is a corresponding row in user_conversation
+        return UserConversation::where('user_id', $userId)
+            ->where('conversation_id', $conversationId)
+            ->exists();
     }
 
     /**
@@ -22,11 +29,9 @@ class StoreCommentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'text' => 'required|string|max:255',
-            'fileFormat' => 'nullable|string|max:255', 
-            'media' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048', 
             'user_id' => 'required|exists:user,id',
-            'post_id' => 'required|exists:post,id'
+            'conversation_id' => 'required|exists:convo,id',
+            'text' => 'required|string',
         ];
     }
 }

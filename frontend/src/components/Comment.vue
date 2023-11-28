@@ -11,6 +11,52 @@ const props = defineProps({ comment: Object, userId: Number });
 const userId = props.userId
 const comment = props.comment
 let openOptions = ref(false);
+onMounted(()=>{
+    if(comment.fileName){
+        axios.get('http://localhost:8000/api/file',{
+            headers:{
+                Authorization: `Bearer ${token}`,
+            },
+            params:{
+                fileName: comment.fileName
+            }
+        }).then((res)=>{
+            comment.media = res.data.data.media
+        }).catch((err)=>{
+            console.log(err);
+        })
+    }
+    const mentionRegex = /@([a-zA-Z0-9_]+)/g;
+    const mentions = comment.text.match(mentionRegex);
+
+    if (mentions) {
+        // Extract usernames from mentions (remove @ symbol)
+        const usernames = mentions.map(mention => mention.substring(1));
+
+        // Fetch mentioned users' data from the backend
+        axios.get('http://localhost:8000/api/get/mention', {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            params: {
+                usernames: usernames.join(','), // Send usernames as a comma-separated string
+            }
+        }).then((res) => {
+            const mentionedUsers = res.data.data.users;
+            
+            // Iterate through mentioned users and replace mentions with clickable links
+            mentionedUsers.forEach(user => {
+                const mentionRegex = new RegExp(`@${user.name}`, 'g');
+                comment.text = comment.text.replace(mentionRegex, `<a href="/user/${user.id}" style="color: #fca521">@${user.name}</a>`);
+            });
+
+
+            // Handle the mentioned users as needed (e.g., display in the UI)
+        }).catch((err) => {
+            console.log(err);
+        });
+    }
+})
 const toggleOpenOptions = () => {
     openOptions.value = !openOptions.value;
 }
@@ -30,18 +76,31 @@ const handleDelete = () => {
         console.log(err)
     })
 }
+function isValidHexColor(color) {
+    const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+    return hexColorRegex.test(color);
+}
+const handleProfile = ()=>{
+    console.log("clicked on profile")
+    router.push({name: 'profile', params: {id: comment.user_id}})
+}
 </script>
 <template>
     <div>
       <div class="font-extrabold flex items-center justify-between mt-0.5 mb-1.5 w-full">
         <div class="flex items-center w-full">
           <div class="min-w-[60px]">
-            <img v-if="comment.profile.picture" :src="comment.profile.picture" width="50" class="rounded-full m-2 mt-3">
-            <img v-else src="../assets/pic.png" width="50" class="rounded-full m-2 mt-3">
+            <img v-if="comment.profile.picture" :src="comment.profile.picture" class="w-[50px] h-[50px] rounded-full object-cover mt-3 ml-2 mr-2" :style="{ borderColor: `${comment.profile.borderColor}`, borderWidth: '2px', borderStyle: 'solid' }">
+            <img v-else src="../assets/pic.png" class="w-[50px] h-[50px] rounded-full object-cover mt-3 ml-2 mr-2">
           </div>
-          <div class="flex text-white">
-            {{ comment.profile.nickname }}
-            <CheckDecagram v-if="comment.profile.verified" fillColor="#1DA1F2" :size="18"/>
+          <div class="flex text-white cursor-pointer" @click="handleProfile">
+            <span v-if="comment.profile.fontColor" :style="{ color: isValidHexColor(comment.profile.fontColor) ? comment.profile.fontColor : '#000000' }">
+              {{ comment.profile.nickname }}
+            </span>
+            <span v-else>
+              {{ comment.profile.nickname }}
+            </span>
+            <CheckDecagram v-if="comment.profile.verified" fillColor="#fca521" :size="18"/>
           </div>
           <span class="font-[300] text-[15px] text-gray-500 pl-2">@{{ comment.user.name }}</span>
         </div>
@@ -59,7 +118,7 @@ const handleDelete = () => {
       </div>
       <div class="w-full border-b border-gray-300 mt-2 text-white">
         <div class="p-2 w-full">
-          <div class="pb-3">{{ comment.text }}</div>
+          <div class="pb-3" v-html="comment.text"></div>
           <div v-if="comment.media">
             <div v-if="comment.fileFormat !== 'mp4'" class="rounded-xl">
               <img :src="comment.media" class="mt-2 object-fill rounded-xl w-full">

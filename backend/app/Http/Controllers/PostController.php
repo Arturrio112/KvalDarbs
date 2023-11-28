@@ -116,6 +116,9 @@ class PostController extends Controller
                 $comment->profile = $profileC;
             }
             $post->profile = $profile;
+            $stat =  Statistic::where('post_id', $post->id)->first();
+            $stat->views +=1;
+            $stat->save();
         }
 
         $response = [
@@ -139,6 +142,21 @@ class PostController extends Controller
         return $this->success([
             'like' => $like
         ], 'Like added successfully', 201);
+    }
+    public function addRepost(StoreRepostRequest $request){
+        $postId = $request['post_id'];
+        $userId = $request['user_id'];
+        $repost = Repost::create([
+            'post_id' => $postId,
+            'user_id' => $userId
+        ]);
+        Log::info('Repost',['repost'=>$repost]);
+        $stat = Statistic::where('post_id', $repost->post_id)->first();
+        $stat->repost += 1;
+        $stat->save();
+        return $this->success([
+            'repost' => $repost
+        ], 'Repost added successfully', 201);
     }
 
     public function removeLike(RemoveLikeRequest $request){
@@ -236,6 +254,18 @@ class PostController extends Controller
             }
            
             $post->profile = $profile;
+            $stat =  Statistic::where('post_id', $post->id)->first();
+            $stat->views +=1;
+            $stat->save();
+            foreach ($post->comment as $comment) {
+                $userC = $comment->user;
+                $profileC = $userC->profile;
+                if(!filter_var($profileC->picture, FILTER_VALIDATE_URL)){
+                    $profileC->picture = $this->filePath($profileC->picture);
+                }
+                $comment->user = $userC;
+                $comment->profile = $profileC;
+            }
         }
         $response = [
             'posts' => $posts,
@@ -280,6 +310,9 @@ class PostController extends Controller
             }
     
             $post->profile = $profile;
+            $stat =  Statistic::where('post_id', $post->id)->first();
+            $stat->views +=1;
+            $stat->save();
         }
     
         $response = [
@@ -323,6 +356,9 @@ class PostController extends Controller
     
             
             $post->profile = $profile;
+            $stat =  Statistic::where('post_id', $post->id)->first();
+            $stat->views +=1;
+            $stat->save();
         }
         $response = [
             'posts' => $posts,

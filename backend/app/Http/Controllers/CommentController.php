@@ -18,7 +18,7 @@ class CommentController extends Controller
     public function store(StoreCommentRequest $request){
         $request->validated($request->all());
         $fileFormat = '';
-        $fileName = ''; // Initialize fileName
+        $fileName = null; // Initialize fileName
         $fileSize = 0;  // Initialize fileSize
         
         if ($request->hasFile('media')) {
@@ -30,7 +30,7 @@ class CommentController extends Controller
                 $fileFormat = $media->getClientOriginalExtension();
 
                 // Generate a unique filename
-                $fileName = uniqid() . '_' . time() . '.' . $fileFormat;
+                $fileName = uniqid() . '_'.'comment'. '_' . time() . '.' . $fileFormat;
 
                 // Store the file in the public/media folder with the generated filename
                 $media->storeAs('public/media', $fileName);

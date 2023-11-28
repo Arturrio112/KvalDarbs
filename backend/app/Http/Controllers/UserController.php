@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AddFollowRequest;
 use App\Http\Requests\DeleteUserRequest;
 use App\Http\Requests\EditProfileRequest;
+use App\Http\Requests\GetMentionedUsersRequest;
 use App\Http\Requests\RemoveFollowRequest;
 use App\Http\Requests\SearchUserRequest;
 use App\Http\Requests\ShowOneUserRequest;
@@ -19,6 +20,9 @@ class UserController extends Controller
 {
     use HttpResponses;
 
+    private function filePath($name){
+        return asset('storage/media/' . $name);
+    }
     public function getUserData(Request $request){
         $user = $request->user();
         if ($user) {
@@ -93,6 +97,9 @@ class UserController extends Controller
         if($users->isEmpty()){
             return $this->error('Users not found',[], 404);
         }
+        foreach($users as $user ){
+            $user->profile->picture = asset('storage/media/' . $user->profile->picture);
+        }
         return $this->success([
             'users'=>$users
         ], 'Users found successfully', 201);
@@ -104,7 +111,12 @@ class UserController extends Controller
         if (!$profile) {
             return $this->error('Profile not found', [], 404);
         }
-    
+        if ($request->has('fontColor')) {
+            $profile->fontColor = $request->input('fontColor');
+        }
+        if ($request->has('borderColor')) {
+            $profile->borderColor = $request->input('borderColor');
+        }
         // Update the profileName if it's provided in the request.
         if ($request->has('profileName')) {
             $profile->nickname = $request->input('profileName');
@@ -134,6 +146,36 @@ class UserController extends Controller
         $profile->save();
     
         return $this->success(['profile'=>$profile], 'Profile updated successfully', 200);
+    }
+    public function getAllUsers(Request $request){
+        $users = User::with('profile')->get();
+        foreach($users as $user){
+            $profile = $user->profile; // Access the profile associated with the user
+            if(!filter_var($profile->picture, FILTER_VALIDATE_URL)){
+                $profile->picture = $this->filePath($profile->picture);
+            }
+        }
+        // You can further customize the response if needed
+        return $this->success(['users'=>$users], 'Users fetched successfully', 200);
+    }
+
+    public function findUserForMention(Request $request){
+        $q = $request->input('query');
+        $users = User::whereRaw('LOWER(name) LIKE ?', [strtolower($q) . '%'])->limit(5)->get();
+        if($users->isEmpty()){
+            return $this->error('Users not found',[], 404);
+        }
+        return $this->success([
+            'users'=>$users
+        ], 'Users found successfully', 201);
+    }
+    public function getMentionedUsers(GetMentionedUsersRequest $request){
+        $usernames = $request->input('usernames');
+        $usernamesArray = explode(',', $usernames);
+        $mentionedUsers = User::whereIn('name', $usernamesArray)->get();
+        return $this->success([
+            'users' => $mentionedUsers,
+        ], 'Mentioned users fetched successfully', 200);
     }
     
 }
