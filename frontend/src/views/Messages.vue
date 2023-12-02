@@ -19,6 +19,7 @@
   let newConvoErrors = ref([])
   const selectedConversation = ref(null);
   const token = localStorage.getItem('authToken')
+  const deleteOverlay = ref(false)
   onMounted(()=>{
     if(!token){
       router.push({
@@ -116,7 +117,9 @@
       newConvoErrors.value.push('Message cannot be empty')
     }
 };
-
+  const toggleDeleteOverlay = ()=>{
+    deleteOverlay.value = !deleteOverlay.value
+  }
   const deselectUser = ()=>{
     selectedUser.value = null;
     newConvoErrors.value =[]
@@ -189,7 +192,7 @@ watch(searchUser, () => {
                 <div class="text-black font-extrabold text-[17px]">{{ selectedConversation.other_user.profile.nickname }}</div>
               </router-link>
             </div>
-            <div class="flex items-center cursor-pointer" @click="handleDelete">
+            <div class="flex items-center cursor-pointer" @click="toggleDeleteOverlay">
               <TrashCanOutline class="pr-3" fillColor="#DC2626" :size="18"/>
               <span class="text-red-600 font-extrabold">Delete</span>
             </div>
@@ -278,5 +281,20 @@ watch(searchUser, () => {
       </div>
     </div>
   </div>
+  <div class="fixed inset-0 flex items-center justify-center z-50" v-if="deleteOverlay">
+      <div class="bg-gray-800 bg-opacity-80 absolute inset-0"></div>
+      <div class="bg-white p-4 rounded-lg z-10">
+        <h2 class="text-2xl font-bold mb-4">Delete Conversation</h2>
+        <p class="text-gray-600">Are you sure you want to delete this conversation?</p>
+        <div class="flex justify-between mt-4">
+          <button @click="handleDelete" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700">
+            Confirm Delete
+          </button>
+          <button @click="toggleDeleteOverlay" class="ml-4 bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

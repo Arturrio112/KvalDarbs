@@ -40,6 +40,10 @@ const token = localStorage.getItem('authToken');
 const isLikedByUser = computed(() => {
   return post.like.some((like) =>  like ? like.user_id === userId : false);
 });
+
+const stopPropagation = (event) => {
+    event.stopPropagation();
+};
 onMounted(()=>{
     if(post.fileName){
         axios.get('http://localhost:8000/api/file',{
@@ -422,7 +426,7 @@ function isValidHexColor(color) {
                     </div>
                 </div>
             </div>
-            <div id="postOverlay" v-if="seePost == true" class="
+            <div id="postOverlay" @click="togglePostBox" v-if="seePost == true" class="
                 fixed
                 inset-0
                 z-50
@@ -433,7 +437,7 @@ function isValidHexColor(color) {
                 md:bg-gray-100
                 md:bg-opacity-80
             ">
-                <div class="
+                <div @click.stop="stopPropagation" class="
                     w-[calc(100%-100px)]
                     md:max-w-2xl
                     md:mx-auto

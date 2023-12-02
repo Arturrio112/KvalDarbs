@@ -18,6 +18,7 @@ use App\Models\Statistic;
 use App\Models\Follow;
 use App\Models\Post;
 use App\Traits\HttpResponses;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -92,12 +93,22 @@ class PostController extends Controller
     }
     public function showAll(Request $request)
     {
+        $dayAgo = Carbon::now()->subDay();
         $posts = Post::select('post.*')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
             ->with(['user', 'statistic', 'comment', 'like'])
+            ->where('post.created_at','>',$dayAgo)
             ->orderByDesc('profile.verified') 
             ->orderByDesc('post.created_at') 
             ->get();
+        $olderPosts = Post::select('post.*')
+            ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
+            ->with(['user', 'statistic', 'comment', 'like'])
+            ->where('post.created_at', '<=', $dayAgo) // Filter posts that are not a day old
+            ->orderByDesc('post.created_at') 
+            ->get();
+
+        $posts = $posts->merge($olderPosts);    
 
         foreach ($posts as $post) {
             $user = $post->user; 
@@ -327,16 +338,28 @@ class PostController extends Controller
 
         $followedUsers = Follow::where('follower_id', $userId)->pluck('followed_id')->toArray();
 
+        $dayAgo = Carbon::now()->subDay();
         
         $posts = Post::select('post.*')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
             ->with(['user', 'statistic', 'comment', 'like'])
             ->whereIn('post.user_id', $followedUsers)
             ->whereNotIn('post.user_id', [$userId]) 
-            ->orderByDesc('post.created_at')
+            ->where('post.created_at','>',$dayAgo)
+            ->orderByDesc('profile.verified') 
+            ->orderByDesc('post.created_at') 
             ->get();
 
-        
+        $olderPosts = Post::select('post.*')
+            ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
+            ->with(['user', 'statistic', 'comment', 'like'])
+            ->whereIn('post.user_id', $followedUsers)
+            ->whereNotIn('post.user_id', [$userId]) 
+            ->where('post.created_at', '<=', $dayAgo) 
+            ->orderByDesc('post.created_at') 
+            ->get();
+    
+        $posts = $posts->merge($olderPosts); 
         foreach ($posts as $post) {
             $user = $post->user; 
             $profile = $user->profile; 
