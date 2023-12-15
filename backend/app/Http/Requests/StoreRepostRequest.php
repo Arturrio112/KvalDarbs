@@ -3,15 +3,24 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use Illuminate\Support\Facades\Auth;
+use App\Models\Post;
 class StoreRepostRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Pārbauda vai lietotājs var veikt šo pieprasījumu.
+     * Pārbauda vai autentifikācijas talona lietotāja id ir vienāds ar padoto id
+     * Pārbauda vai raksta autora id ir vienāds ar ipriekš minētajiem id
      */
     public function authorize(): bool
     {   
-        return true;
+        $authenticatedUserId = Auth::id();
+
+        $userId = $this->input('user_id');
+        $postId = $this->input('post_id');
+        $post = Post::find($postId);
+
+        return $post &&$userId == $authenticatedUserId && $authenticatedUserId != $post->user_id;
     }
 
     /**

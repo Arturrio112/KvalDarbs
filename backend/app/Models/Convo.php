@@ -8,8 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class Convo extends Model
 {
     use HasFactory;
+    //Norāda tabulas vārdu
     protected $table = 'convo';
-    
+    //Definē relācijas ar citām datu bāzes tabulām
     public function userConversation(){
         return $this->hasMany(UserConversation::class);
     }

@@ -1,4 +1,5 @@
 <script setup>
+//Importē funkcijas, komponentes un ikonas
 import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
@@ -6,14 +7,17 @@ import Sync from 'vue-material-design-icons/Sync.vue'
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import Post from '../components/Post.vue'
+//Definē mainīgos
 const props = defineProps({ repost: Object, userId: Number });
 const userId = props.userId
 const repost = props.repost
 const token = localStorage.getItem('authToken');
 let openOptions = ref(false);
+//Funkcija, kas atver un aizver opcijas
 const toggleOpenOptions = () => {
     openOptions.value = !openOptions.value;
 }
+//Funkcija, kas dzēš dalīto rakstu
 const handleDelete = () => {
     console.log('clicked on delete')
     console.log(token)

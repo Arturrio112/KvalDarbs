@@ -1,9 +1,8 @@
 <script setup>
-
+//Importē funkcijas, komponentes un ikonas
 import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-//import { Link } from '@inertiajs/vue3';
 import HeartOutline from 'vue-material-design-icons/HeartOutline.vue'
 import ChartBar from 'vue-material-design-icons/ChartBar.vue'
 import MessageOutline from 'vue-material-design-icons/MessageOutline.vue'
@@ -21,6 +20,7 @@ import Comment from '../components/Comment.vue'
 import data from "emoji-mart-vue-fast/data/all.json"
 import "emoji-mart-vue-fast/css/emoji-mart.css"
 import { Picker, EmojiIndex } from "emoji-mart-vue-fast/src"
+//Definē mainīgos
 const props = defineProps({ post: Object, userId: Number });
 const router = useRouter();
 const userId = props.userId
@@ -37,14 +37,17 @@ let showEmojiPicker = ref(false)
 let emojiIndex = new EmojiIndex(data);
 const mentionResults = ref([]);
 const token = localStorage.getItem('authToken');
+//Funkcija, kas pārbauda vai lietotājs ir novērtējis rakstu ar patīk
 const isLikedByUser = computed(() => {
   return post.like.some((like) =>  like ? like.user_id === userId : false);
 });
-
+//Funkcijas, kas aptur citas funkcijas darbību
 const stopPropagation = (event) => {
     event.stopPropagation();
 };
+//Funkcijas, kas nostrādā komponentes ielādē
 onMounted(()=>{
+    //Ja rakstam ir attēls, tad tiek nosūtīt pieprasījums pēc faila
     if(post.fileName){
         axios.get('http://localhost:8000/api/file',{
             headers:{
@@ -63,37 +66,37 @@ onMounted(()=>{
     const mentions = post.text.match(mentionRegex);
 
     if (mentions) {
-        // Extract usernames from mentions (remove @ symbol)
+        // Iegūst visus lietotāja vardus, kas ir pieminēti
+        //un tos aizviedo ar linku uz profila skatu
         const usernames = mentions.map(mention => mention.substring(1));
 
-        // Fetch mentioned users' data from the backend
+        
         axios.get('http://localhost:8000/api/get/mention', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
             params: {
-                usernames: usernames.join(','), // Send usernames as a comma-separated string
+                usernames: usernames.join(','), 
             }
         }).then((res) => {
             const mentionedUsers = res.data.data.users;
             
-            // Iterate through mentioned users and replace mentions with clickable links
+           
             mentionedUsers.forEach(user => {
                 const mentionRegex = new RegExp(`@${user.name}`, 'g');
                 post.text = post.text.replace(mentionRegex, `<a href="/user/${user.id}" style="color: #fca521">@${user.name}</a>`);
             });
 
-
-            // Handle the mentioned users as needed (e.g., display in the UI)
         }).catch((err) => {
             console.log(err);
         });
     }
 })
+//Funkcijas, kas nosūta pieprasījumu atkarībā no tā vai ir novērtēts ar patīk
 const handleLike = ()=>{
-    console.log('clicked')
+    //Ja ir novērtēs ar patīk, tad tiek nosūtīts pieprasījums, kas dzēš patīk novērtējumu
     if (isLikedByUser.value) {
-    console.log(post.id)
+    
     axios
         .delete(`http://localhost:8000/api/post/${post.id}/like`, {
         headers: {
@@ -115,8 +118,9 @@ const handleLike = ()=>{
         .catch((err) => {
         console.log(err);
         });
+    //Ja nav novērtēts ar patīk, tiek sūtīts pieprasījums, lai novērtētu ar patīk
     } else {
-    console.log(post.id)
+    
     axios
         .post(`http://localhost:8000/api/post/${post.id}/like`, {
         post_id: post.id,
@@ -136,6 +140,7 @@ const handleLike = ()=>{
         });
     }
 }
+//Funkcija, kas pārbauda vai faila tips ir atļauts
 const isAllowedType = (type)=>{
     const allowedTypes = ['jpeg', "jpg", 'png', 'gif'];
 
@@ -143,6 +148,7 @@ const isAllowedType = (type)=>{
 
     return allowedTypes.includes(fileExtension);
 }
+//Funkcijas, kas iegūst failu
 const getFile = (e)=>{
     const selectedFile = e.target.files[0];
     newCommentErrors.value = []
@@ -154,17 +160,18 @@ const getFile = (e)=>{
             showUpload.value = URL.createObjectURL(selectedFile);
             uploadType.value = fileExtension;
         } else {
-            // Display an error to the user, indicating invalid file format
+            
             newCommentErrors.value.push('Added file format is not supported, supported file formats - jpeg, png, jpg, gif ')
-            // Clear the input element
+            
             e.target.value = null;
-            // Reset values to indicate no selected media
+            
             file.value = null;
             showUpload.value = '';
             uploadType.value = '';
         }
     }
   }
+//Funkcija, kas ļauj dzēst rakstu
 const handleDelete = () => {
     console.log('clicked on delete')
     console.log(post.id,post.user_id, userId)
@@ -184,6 +191,7 @@ const handleDelete = () => {
         console.log(err);
     })
 }
+//Funkcija, kas ļauj dalīties ar rakstu
 const handleRepost = ()=>{
     console.log('clicked on repost')
     console.log(post.id,post.user_id, userId)
@@ -202,6 +210,7 @@ const handleRepost = ()=>{
         console.log(err);
     })
 }
+//Funkcija, kas ļauj komentēt rakstu
 const handleComment = ()=>{
     const formData = new FormData()
     commentInput.value = commentInput.value.trim()
@@ -240,6 +249,7 @@ const handleComment = ()=>{
         })
         
 }
+//Funkcija, kas norāda patīk ikonas krāsu
 const heartColor = computed(()=>{
     if(isLikedByUser.value){
         return '#FF0000'
@@ -247,6 +257,7 @@ const heartColor = computed(()=>{
         return '#5e5c5c'
     }
 })
+//Funckija, kas atver un aizver raksta izveides lauku
 const togglePostBox = ()=>{
     console.log("clicked")
     console.log(seePost.value)
@@ -255,13 +266,16 @@ const togglePostBox = ()=>{
     uploadType.value=''
     commentInput.value=''
 }
+//Funkcija, kas atver un aizver raksta opciju lauku
 const toggleOpenOptions = () => {
     seePost.value = false
     openOptions.value = !openOptions.value;
 }
+//Funkcija, kas atver emocijzimju izvēles lauku
 const toggleEmojiPicker = () =>{
     showEmojiPicker.value = !showEmojiPicker.value;
 }
+//Funckcija, kas noformē raksta izveides lauku un nosūta pieminēšanas pieprasījumus
 const commentTextareaInput = (e)=>{
     commentArea.value.style.height = "auto"
     commentArea.value.style.height = `${e.target.scrollHeight}px`
@@ -289,6 +303,7 @@ const commentTextareaInput = (e)=>{
       mentionResults.value = []; // Clear mention results if no "@" symbol
     }
 }
+//Funkcija, kas ieliek pieminēto lietotāju tekstā
 const insertMention = (user) => {
     const currentComment = commentInput.value;
     const words = currentComment.split(' ');
@@ -299,13 +314,15 @@ const insertMention = (user) => {
     mentionResults.value = [];
     commentArea.value.focus();
   };
+//Funkcija, kas aizved uz profila skatu
 const handleProfile = ()=>{
-    console.log("clicked on profile")
     router.push({name: 'profile', params: {id: post.user_id}})
 }
+//Funkcija, kas ievieto tekstā izvēlēto emocijzīmi
 const handleEmojiClick = (emoji) => {
     commentInput.value += emoji.native;
 };
+//Funkcija, kas validē hex krāsu
 function isValidHexColor(color) {
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
     return hexColorRegex.test(color);

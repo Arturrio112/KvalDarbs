@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Sekot datu bāzes tabulas shēma
      */
     public function up(): void
     {

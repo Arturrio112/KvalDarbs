@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Noņem kolonu no lietotāja tabulas
      */
     public function up(): void
     {

@@ -19,13 +19,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
-
+//Viesim pieejamas funkcionalitātes maršruti
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
-
+//Reģistrētajiem lietotājiem pieejamās funkcionalitātes maršruti
 Route::group(['middleware'=>['auth:sanctum']], function(){
     Route::get('/user-data', [UserController::class, 'getUserData']);
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -42,7 +39,6 @@ Route::group(['middleware'=>['auth:sanctum']], function(){
     Route::post('/post/{id}/repost', [PostController::class, 'addRepost']);
     Route::get('/post/user/{id}',[PostController::class, 'getUsersPosts']);
     Route::get('/repost/user/{id}',[PostController::class, 'getUsersReposts']);
-    Route::get('/repost', [PostController::class, 'getAllReposts']);
     Route::post('/user/{id}/follow', [UserController::class, 'addFollow']);
     Route::delete('/user/{id}/follow', [UserController::class, 'removeFollow']);
     Route::get('/follow/{id}',[PostController::class, 'getFollowedPosts']);

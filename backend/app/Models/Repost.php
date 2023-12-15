@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class Repost extends Model
 {
     use HasFactory;
-
+    //Norāda datu bāzes tabulas nosaukumu un aizpildāmos laukus
     protected $table = 'repost';
 
     protected $fillable = [
         'user_id',
         'post_id'
     ];
+    //Definē relācijas ar citām datu bāzes tabulām
     public function post(){
         return $this->belongsTo(Post::class);
     }

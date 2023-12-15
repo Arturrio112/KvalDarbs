@@ -3,19 +3,20 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use Illuminate\Support\Facades\Auth;
 class RemoveLikeRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Pārbauda vai lietotājs var veikt šo pieprasījumu.
      */
     public function authorize(): bool
     {
-        return true;
+        $authenticatedUser = Auth::user();
+        return $authenticatedUser && $authenticatedUser->id == $this->input('user_id');
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Definēti pieprasījuma datu noteikumi
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */

@@ -1,4 +1,5 @@
 <script setup>
+//Importē funkcijas, ikonas
   import axios from 'axios'
   import {ref, computed, onMounted, watchEffect, watch} from 'vue'
   import { useRouter, useRoute } from 'vue-router';
@@ -8,6 +9,7 @@
   import Close from 'vue-material-design-icons/Close.vue';
   import Convo from '../components/Convo.vue'
   import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
+//Definē mainīgos
   const user = ref(null)
   const userId = ref(null)
   let newConvoOverlay = ref(false)
@@ -20,13 +22,18 @@
   const selectedConversation = ref(null);
   const token = localStorage.getItem('authToken')
   const deleteOverlay = ref(false)
+  const router = useRouter();
+  //Funkcija, kas nostrādā skatam ielādējoties
   onMounted(()=>{
+    //Ja nav autentifikācijas talons, tiek novirzīts uz pieslēgšanās skatu
     if(!token){
       router.push({
         name: 'login'
       })
+      return
     }
     watchEffect(()=>{
+      //Pieprasījums atgriež lietotāja datus
       axios.get(`http://localhost:8000/api/user-data`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -38,6 +45,7 @@
       }).catch((err)=>{
         console.error('Error fetching data', err);
       })
+      //Tiek atgrieztas visas privātās sarunas
       axios.get(`http://localhost:8000/api/${userId.value}/convo`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -48,7 +56,6 @@
       }).then((res)=>{
         console.log(res)
         convos.value = res.data.data.conversations
-        console.log(convos.value)
       }).catch((err)=>{
         console.error('Error fetching data', err);
       })
@@ -56,10 +63,12 @@
 
 
   })
+  //Funkcija, kas atver un aizver jaunas sarunas izveides logu
   const toggleNewConvoOverlay = () => {
     newConvoOverlay.value = !newConvoOverlay.value;
     searchUser.value = ''
   };
+  //Funkcija, kas sameklē lietotājus
   const performUserSearch = ()=>{
     if(searchUser!==''){
       axios.get('http://localhost:8000/api/search',{
@@ -77,13 +86,16 @@
       })
     }
   }
+  //Funkcija, kas ļauj izvēlēties lietotāju
   const selectUser = (user) => {
     selectedUser.value = user;
     searchUser.value = ''
   };
+  //Funkcija, kas pārbauda vai jau ir sākta saruna
   const hasConvoStarted = (id) =>{
     return convos.value.some( c=> c.other_user.id == id)
   }
+  //Funkcija, kas ļauj nosūtīt vēstuli
   const sendMessage = () => {
     newConvoErrors.value = []
     newMessage.value = newMessage.value.trim()
@@ -117,16 +129,20 @@
       newConvoErrors.value.push('Message cannot be empty')
     }
 };
+//Funkcija, kas atver un aizver dzēšanas apstiprinājuma logu
   const toggleDeleteOverlay = ()=>{
     deleteOverlay.value = !deleteOverlay.value
   }
+  //Funkcija, kas ļauj noņemt izvēlēto lietotāju
   const deselectUser = ()=>{
     selectedUser.value = null;
     newConvoErrors.value =[]
   }
+  //Funkcija, kas ļauj izvēlēties sarunu
   const selectConversation = (conversation)=>{
     selectedConversation.value = selectedConversation.value === conversation ? null : conversation;
   }
+  //Funkcija, kas izdzēš sarunu
   const handleDelete= ()=>{
     console.log(selectedConversation.value)
     axios.delete(`http://localhost:8000/api/convo/${selectedConversation.value.conversation_id}`,{

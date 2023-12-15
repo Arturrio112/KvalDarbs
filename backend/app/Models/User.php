@@ -13,10 +13,11 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * 
      *
      * @var array<int, string>
      */
+    //Norāda datu bāzes tabulas nosaukumu un aizpildāmos laukus
     protected $table = 'user';
     protected $fillable = [
         'name',
@@ -26,17 +27,18 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * 
      *
      * @var array<int, string>
      */
+    //Atribūti, kas ir paslēpti
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
     /**
-     * The attributes that should be cast.
+     * 
      *
      * @var array<string, string>
      */
@@ -44,7 +46,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
-
+    //Definē relācijas ar citām datu bāzes tabulām
     public function profile(){
         return $this->hasOne(Profile::class);
     }

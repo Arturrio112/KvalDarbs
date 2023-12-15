@@ -1,17 +1,21 @@
 <script setup>
+//Importē nepieciešamās komponentes un funkcijas
 import { onMounted, ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import DotsHorizontal from 'vue-material-design-icons/DotsHorizontal.vue'
 import TrashCanOutline from 'vue-material-design-icons/TrashCanOutline.vue'
 import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
 import axios from 'axios';
+//Definē mainīgos
 const router = useRouter();
 const token = localStorage.getItem('authToken');
 const props = defineProps({ comment: Object, userId: Number });
 const userId = props.userId
 const comment = props.comment
 let openOptions = ref(false);
+//Funkcija, kas nostrādā pievienojot šo komponenti
 onMounted(()=>{
+    //Ja ir attēls komentāram, tiek nosūtīts pieprasījums pēc faila
     if(comment.fileName){
         axios.get('http://localhost:8000/api/file',{
             headers:{
@@ -30,36 +34,35 @@ onMounted(()=>{
     const mentions = comment.text.match(mentionRegex);
 
     if (mentions) {
-        // Extract usernames from mentions (remove @ symbol)
+        // Iegūst visus lietotāja vardus, kas ir pieminēti
+        //un tos aizviedo ar linku uz profila skatu
         const usernames = mentions.map(mention => mention.substring(1));
 
-        // Fetch mentioned users' data from the backend
+        
         axios.get('http://localhost:8000/api/get/mention', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
             params: {
-                usernames: usernames.join(','), // Send usernames as a comma-separated string
+                usernames: usernames.join(','), 
             }
         }).then((res) => {
             const mentionedUsers = res.data.data.users;
-            
-            // Iterate through mentioned users and replace mentions with clickable links
+
             mentionedUsers.forEach(user => {
                 const mentionRegex = new RegExp(`@${user.name}`, 'g');
                 comment.text = comment.text.replace(mentionRegex, `<a href="/user/${user.id}" style="color: #fca521">@${user.name}</a>`);
             });
-
-
-            // Handle the mentioned users as needed (e.g., display in the UI)
         }).catch((err) => {
             console.log(err);
         });
     }
 })
+//Opciju pogas atvēršanas un aizvēršanas funkcija
 const toggleOpenOptions = () => {
     openOptions.value = !openOptions.value;
 }
+//Komentāra dzēšanas funkcija
 const handleDelete = () => {
     axios.delete(`http://localhost:8000/api/comment/${comment.id}`, {
       headers: {
@@ -76,10 +79,12 @@ const handleDelete = () => {
         console.log(err)
     })
 }
+//Hex krāsas validācijas funkcija
 function isValidHexColor(color) {
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
     return hexColorRegex.test(color);
 }
+//Funkcija, kas aizved uz profila skatu
 const handleProfile = ()=>{
     console.log("clicked on profile")
     router.push({name: 'profile', params: {id: comment.user_id}})

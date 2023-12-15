@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class Like extends Model
 {
     use HasFactory;
-
+    //Norāda datu bāzes tabulas nosaukumu un aizpildāmos laukus
     protected $table = 'like';
 
     protected $fillable = [
         'user_id',
         'post_id'
     ];
-
+    //Definē relācijas ar citām datu bāzes tabulām
     public function user(){
         return $this->belongsTo(User::class);
     }

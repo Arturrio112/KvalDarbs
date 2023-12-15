@@ -19,10 +19,11 @@ use Illuminate\Support\Facades\DB;
 class UserController extends Controller
 {
     use HttpResponses;
-
+    //Funkcija, kas atgriež faila linku
     private function filePath($name){
         return asset('storage/media/' . $name);
     }
+    //Funckija, kas atgriež lietotāja datus
     public function getUserData(Request $request){
         $user = $request->user();
         if ($user) {
@@ -36,28 +37,34 @@ class UserController extends Controller
             return $this->error('User not found', [], 404);
         }
     }
-    public function deleteUser(DeleteUserRequest $request, $id)
+    //Funkcija, kas ļauj izdzēst lietotāju
+    public function deleteUser(DeleteUserRequest $request)
     {
-        $userId = $id;
+        $userId = $request->input('user_id');
         $user = User::find($userId);
         if(!$user){
             return $this->error('User not found',[], 404);
         }
+        //tiek izdzēsts lietotāja profils
         if ($user->profile) {
             $user->profile->delete();
         }
+        //tiek izdzēsts lietotāja autentifikācijas talons
         $user->tokens()->delete();
+        //tiek izdzēsts lietotājs
         $user->delete();
         return $this->success([], 'deleted');
     }
-
+    //Funkcija, kas atgriež viena lietotāja profilu
     public function showOne(ShowOneUserRequest $request){
         $request->validated($request->all());
         $userId = $request->input('user_id');
+        //Atgriež lietotāju, tā profilu un sekotājus
         $user = User::with('profile', 'followers')
             ->withCount(['followers','repost','posts'])
             ->where('id', $userId)
             ->first();
+        //Pievieno lietotāja attēlu
         if($user->profile->picture){
             $user->profile->picture = asset('storage/media/' . $user->profile->picture);
         }
@@ -66,9 +73,11 @@ class UserController extends Controller
         }
         return $this->success(['user' => $user]);
     }
+    //Funkcija, kas ļauj sekot lietotājam 
     public function addFollow(AddFollowRequest $request){
         $follower_id = $request->input('follower_id');
         $followed_id = $request->input('followed_id');
+        //Tiek sekots lietotājam
         $follow = Follow::create([
             'follower_id' =>$follower_id,
             'followed_id'=>$followed_id
@@ -77,9 +86,11 @@ class UserController extends Controller
             'follow' => $follow
         ], 'Follow added successfully', 201);
     }
+    //Funkcija, kas ļauj atsekot lietotājam
     public function removeFollow(RemoveFollowRequest $request){
         $follower_id = $request->input('follower_id');
         $followed_id = $request->input('followed_id');
+        //Tiek atsekots lietotājam
         $deleted = Follow::where('follower_id', $follower_id)
             ->where('followed_id', $followed_id)
             ->delete();
@@ -89,14 +100,19 @@ class UserController extends Controller
             return $this->error([], 'Follow removed unsuccessfully', 201);
         }
     }
+    //Funkcija, kas ļauj meklēt lietotājus
     public function searchUser(SearchUserRequest $request){
         $name = $request->input('username');
+        //Atrod lietotāju pēc ievadītā teksta
         $users = User::with('profile')
         ->whereRaw('LOWER(name) LIKE ?', [strtolower($name) . '%'])
+            ->limit(5)
             ->get();
+        //Ja neatrod lietotāju, tiek atgriezts paziņojums
         if($users->isEmpty()){
             return $this->error('Users not found',[], 404);
         }
+        //Katram atrastajam lietotājam pievieno attēlu
         foreach($users as $user ){
             $user->profile->picture = asset('storage/media/' . $user->profile->picture);
         }
@@ -104,6 +120,7 @@ class UserController extends Controller
             'users'=>$users
         ], 'Users found successfully', 201);
     }
+    //Funkcija, kas ļauj rediģēt lietotāja profilu
     public function editProfile(EditProfileRequest $request){
         $profileId = $request->input('profileId');
         $profile = Profile::where('id', $profileId)->first();
@@ -111,46 +128,45 @@ class UserController extends Controller
         if (!$profile) {
             return $this->error('Profile not found', [], 404);
         }
+        //Rediģē profilu pēc ievadītajiem datiem
         if ($request->has('fontColor')) {
             $profile->fontColor = $request->input('fontColor');
         }
         if ($request->has('borderColor')) {
             $profile->borderColor = $request->input('borderColor');
         }
-        // Update the profileName if it's provided in the request.
+        
         if ($request->has('profileName')) {
             $profile->nickname = $request->input('profileName');
         }
     
-        // Update the profilePicture if it's provided in the request.
+        
         if ($request->hasFile('profilePicture')) {
             $profilePicture = $request->file('profilePicture');
             if ($profilePicture->isValid()) {
-                // Get the original file extension (e.g., jpg, png)
+                
                 $fileFormat = $profilePicture->getClientOriginalExtension();
-    
-                // Generate a unique filename
+
                 $fileName = uniqid() . '_' . time() . '.' . $fileFormat;
-    
-                // Store the file in the desired folder with the generated filename
+
                 $profilePicture->storeAs('public/media', $fileName);
     
-                // Update the 'picture' attribute in the profile
                 $profile->picture = $fileName;
             } else {
-                // Handle invalid profile picture file
                 return $this->error('Invalid profile picture file', [], 400);
             }
         }
-    
+        //Saglabā veiktās izmaiņas
         $profile->save();
     
         return $this->success(['profile'=>$profile], 'Profile updated successfully', 200);
     }
+    //Funkcija, kas atgriež visus lietotājus
     public function getAllUsers(Request $request){
         $users = User::with('profile')->get();
+        //Katra lietotāja profilam pievieno tā attēlu
         foreach($users as $user){
-            $profile = $user->profile; // Access the profile associated with the user
+            $profile = $user->profile;
             if(!filter_var($profile->picture, FILTER_VALIDATE_URL)){
                 $profile->picture = $this->filePath($profile->picture);
             }
@@ -158,9 +174,10 @@ class UserController extends Controller
         // You can further customize the response if needed
         return $this->success(['users'=>$users], 'Users fetched successfully', 200);
     }
-
+    //Funkcija, kas atrod lietotājus, kurus mēģina pieminēt
     public function findUserForMention(Request $request){
         $q = $request->input('query');
+        //Atrod lietotājus pēc ievadītā teksta
         $users = User::whereRaw('LOWER(name) LIKE ?', [strtolower($q) . '%'])->limit(5)->get();
         if($users->isEmpty()){
             return $this->error('Users not found',[], 404);
@@ -169,9 +186,11 @@ class UserController extends Controller
             'users'=>$users
         ], 'Users found successfully', 201);
     }
+    //Funkcija, kas atgriež lietotājus, kuri ir pieminēti
     public function getMentionedUsers(GetMentionedUsersRequest $request){
         $usernames = $request->input('usernames');
         $usernamesArray = explode(',', $usernames);
+        //Atrod visus lietotājus, kuri ir pieminēti
         $mentionedUsers = User::whereIn('name', $usernamesArray)->get();
         return $this->success([
             'users' => $mentionedUsers,

@@ -1,4 +1,5 @@
 <script setup>
+//Importē funkcijas, ikonas un komponentes
   import {ref, computed, onMounted, watchEffect} from 'vue'
   import { useRouter } from 'vue-router';
   import axios from 'axios';
@@ -16,6 +17,7 @@
   import data from "emoji-mart-vue-fast/data/all.json"
   import "emoji-mart-vue-fast/css/emoji-mart.css"
   import { Picker, EmojiIndex } from "emoji-mart-vue-fast/src"
+  //Definē mainīgos
   let textarea = ref(null)
   let createPost = ref(false)
   let postsLoaded = ref(false)
@@ -35,14 +37,19 @@
   let emojiIndex = new EmojiIndex(data);
   const mentionResults = ref([]);
   const userId = computed(() => (user.value ? user.value.user_id : null));
+  //Funkcija, kas nostrādā skatam ielādējoties
   onMounted(()=>{
     const token = localStorage.getItem('authToken')
+    //Ja nav autentifikācijas talons, tad tiek novirzīts uz pieslēgšanās skatu
     if(!token){
       router.push({
         name: 'login'
       })
+      return
     }
+    
     watchEffect(() => {
+      //Iegūst lietotāja datus
       axios.get('http://localhost:8000/api/user-data', {
         headers: {
           Authorization: `Bearer ${token}`
@@ -61,6 +68,7 @@
             name: 'login'
           })
         }
+        //Iegūst lietotāju, kuriem seko, rakstus
         axios.get(`http://localhost:8000/api/follow/${user.value.id}`,{
           params:{
             userId: user.value.id
@@ -81,6 +89,7 @@
         })
         loading.value = false;
       })
+      //Iegūst visus rakstus
       axios.get('http://localhost:8000/api/post', {
         headers: {
           Authorization: `Bearer ${token}`
@@ -98,6 +107,7 @@
       })
     })
   }) 
+  //Funkcija, kas noformē raksta lauku 
   const textareaInput = (e)=>{
     const token = localStorage.getItem('authToken')
     textarea.value.style.height = "auto"
@@ -106,7 +116,7 @@
     const lastWord = words[words.length - 1];
 
     if (lastWord.startsWith('@') && lastWord.length > 1&&words.length>0) {
-      const query = lastWord.substring(1); // Remove "@" symbol
+      const query = lastWord.substring(1); 
       axios.get('http://localhost:8000/api/search/mention',{ 
         params: {
            query 
@@ -122,9 +132,10 @@
         console.error(error);
       });
     } else {
-      mentionResults.value = []; // Clear mention results if no "@" symbol
+      mentionResults.value = []; 
     }
   }
+  //Funkcija, kas pievieno pieminēto lietotāju tekstā
   const insertMention = (user) => {
     const currentPost = post.value;
     const words = currentPost.split(' ');
@@ -135,6 +146,7 @@
     mentionResults.value = [];
     textarea.value.focus();
   };
+  //Pārbauda vai faila tips ir atļauts
   const isAllowedType = (type)=>{
     const allowedTypes = ['jpeg', "jpg", 'png', 'gif'];
 
@@ -142,6 +154,7 @@
 
     return allowedTypes.includes(fileExtension);
   }
+  //Funkcija, kas iegūst failu
   const getFile = (e)=>{
     const selectedFile = e.target.files[0];
     newPostErrors.value = []
@@ -153,29 +166,33 @@
             showUpload.value = URL.createObjectURL(selectedFile);
             uploadType.value = fileExtension;
         } else {
-            // Display an error to the user, indicating invalid file format
+           
             newPostErrors.value.push('Added file format is not supported, supported file formats - jpeg, png, jpg, gif ')
-            // Clear the input element
+            
             e.target.value = null;
-            // Reset values to indicate no selected media
+          
             file.value = null;
             showUpload.value = '';
             uploadType.value = '';
         }
     }
   }
+  //Funkcija, kas aizver logu
   const closeMessageBox=()=>{
     createPost.value=false
     post.value=''
     showUpload.value=''
     uploadType.value=''
   }
+  //Funkcija, kas atver un aizver emocijzīmju logu
   const toggleEmojiPicker = () =>{
     showEmojiPicker.value = !showEmojiPicker.value;
   }
+  //Funkcija, ka pievieno emocijzīmi
   const handleEmojiClick = (emoji) => {
     post.value += emoji.native;
   };
+  //Funkcija, kas noformē raksta datus un nosūta pieprisījumu
   const handlePostSubmit = async () => {
     const token = localStorage.getItem('authToken');
     
@@ -194,7 +211,7 @@
         newPostErrors.value.push('Text cannot be empty')
         return
     }
-    const formData = new FormData(); // Create a FormData object
+    const formData = new FormData(); 
     
     formData.append('text', post.value);
     formData.append('user_id', user.value.user_id);
@@ -203,11 +220,9 @@
         formData.append('media', file.value);
         formData.append('fileFormat', uploadType.value);
     } else {
-        formData.append('media', ''); // No media, so send an empty value
+        formData.append('media', ''); 
         formData.append('fileFormat', '');
     }
-    
-    console.log(formData);
     
     axios.post('http://localhost:8000/api/post', formData, {
         headers: {

@@ -27,60 +27,60 @@ use Illuminate\Support\Facades\Log;
 class PostController extends Controller
 {
     use HttpResponses;
+    //Funkcija, kas ļauj saglabāt rakstu
     public function store(StorePostRequest $request)
     {
-        Log::info('Received request', ['request' => $request->all()]);
 
-        // Validate the request data
         $validatedData = $request->validated();
 
-        // Initialize variables
+       
         $fileFormat = '';
-        $fileName = ''; // Initialize fileName
-        $fileSize = 0;  // Initialize fileSize
+        $fileName = ''; 
+        $fileSize = 0;  
 
-        // Check if 'media' key exists in the request
+        // Pārbauda vai ir pievienots attēls
         if ($request->hasFile('media')) {
-            // Get the 'media' file from the request
+            
             $media = $request->file('media');
 
-            // Check if the 'media' file is valid
+            // Pārbauda vai attēls ir augšupielādēts bez kļūdām
             if ($media->isValid()) {
-                // Get the original file extension (e.g., jpg, png)
+                // Iegūst faila tipu
                 $fileFormat = $media->getClientOriginalExtension();
 
-                // Generate a unique filename
+                // Izveido faila vārdu
                 $fileName = uniqid() . '_' . time() . '.' . $fileFormat;
 
-                // Store the file in the public/media folder with the generated filename
+                // Saglabā failu failu sistēmā
                 $media->storeAs('public/media', $fileName);
 
-                // Get the file size
+                //Iegūst faila izmēru
                 $fileSize = $media->getSize();
             } else {
-                // Handle invalid media file
+                // Atgriež kļūdu
                 return $this->error([], 'Invalid media file', 400);
             }
         }
 
-        
+        //Saglabā rakstu
         $post = Post::create([
             'user_id' => $validatedData['user_id'],
             'text' => $validatedData['text'],
             'fileFormat' => $fileFormat,
-            'fileName' => $fileName, // Set fileName
-            'fileSize' => $fileSize, // Set fileSize
+            'fileName' => $fileName, 
+            'fileSize' => $fileSize, 
         ]);
 
-        // Create associated statistics
+        // Izveido failam statistiku
         $stats = Statistic::create([
             'post_id' => $post->id,
         ]);
-
+        //Atgriež raksta datus
         return $this->success([
             'post' => $post,
         ], 'Post created successfully', 201);
     }
+    //Funkcija, kas atgriež failu no failu sistēmas
     public function getFile(GetFileRequest $request){
         $name = $request['fileName'];
         $res =asset('storage/media/' . $name);
@@ -88,12 +88,17 @@ class PostController extends Controller
             'media'=>$res
         ], 'Photo', 200);
     }
+    //Funkcija, kas atgriež faila linku
     private function filePath($name){
         return asset('storage/media/' . $name);
     }
+    //Funkcija, kas ļauj apskatīt visus rakstus
     public function showAll(Request $request)
-    {
+    {   
         $dayAgo = Carbon::now()->subDay();
+        //Atgriež visus rakstus, kas ir jaunāki par dienu un sakārto tos pēc vecumu
+        // un pēc tā
+        //vai lietotājas ir verificēts
         $posts = Post::select('post.*')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
             ->with(['user', 'statistic', 'comment', 'like'])
@@ -101,22 +106,24 @@ class PostController extends Controller
             ->orderByDesc('profile.verified') 
             ->orderByDesc('post.created_at') 
             ->get();
+        //Atgriež visus rakstus, kas ir vecāki par dienu un sakārto tos pēc vecuma
         $olderPosts = Post::select('post.*')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
             ->with(['user', 'statistic', 'comment', 'like'])
-            ->where('post.created_at', '<=', $dayAgo) // Filter posts that are not a day old
+            ->where('post.created_at', '<=', $dayAgo) 
             ->orderByDesc('post.created_at') 
             ->get();
-
+        //Abus raksta masīvus saliek vienā
         $posts = $posts->merge($olderPosts);    
 
         foreach ($posts as $post) {
             $user = $post->user; 
             $profile = $user->profile; 
+            //Atrod raksta autora profila attēlu
             if(!filter_var($profile->picture, FILTER_VALIDATE_URL)){
                 $profile->picture = $this->filePath($profile->picture);
             }
-            
+            //Katram raksta komentāram pievieno tā autoru, autora profilu un attēlu
             foreach ($post->comment as $comment) {
                 $userC = $comment->user;
                 $profileC = $userC->profile;
@@ -126,27 +133,29 @@ class PostController extends Controller
                 $comment->user = $userC;
                 $comment->profile = $profileC;
             }
+            //Palielina rakstam apskatu skaitu statistikā
             $post->profile = $profile;
             $stat =  Statistic::where('post_id', $post->id)->first();
             $stat->views +=1;
             $stat->save();
         }
-
+        //Atgriež rakstu datus
         $response = [
             'posts' => $posts
         ];
 
         return $this->success($response);
     }
-
+    //Funkcija, kas ļauj pievienot "Patīk' rakstam
     public function addLike(AddLikeRequest $request){
         $postId = $request['post_id'];
         $userId = $request['user_id'];
-
+        //Pievieno patīk rakstam
         $like = Like::create([
             'post_id' => $postId,
             'user_id' => $userId
         ]);
+        //Palielina rakstam patīk skaitu statistikā
         $stat =  Statistic::where('post_id', $postId)->first();
         $stat->like +=1;
         $stat->save();
@@ -154,14 +163,16 @@ class PostController extends Controller
             'like' => $like
         ], 'Like added successfully', 201);
     }
+    //Funkcija, kas ļauj dalīties ar rakstu
     public function addRepost(StoreRepostRequest $request){
         $postId = $request['post_id'];
         $userId = $request['user_id'];
+        //Izveido dalīto rakstu
         $repost = Repost::create([
             'post_id' => $postId,
             'user_id' => $userId
         ]);
-        Log::info('Repost',['repost'=>$repost]);
+        //Paliena raksta dalīto rakstu skaitu statistikā
         $stat = Statistic::where('post_id', $repost->post_id)->first();
         $stat->repost += 1;
         $stat->save();
@@ -169,13 +180,15 @@ class PostController extends Controller
             'repost' => $repost
         ], 'Repost added successfully', 201);
     }
-
+    //Funkcija, kas ļauj noņemt "Patīk" no raksta
     public function removeLike(RemoveLikeRequest $request){
         $postId = $request['post_id'];
         $userId = $request['user_id'];
+        //Izdzēšs patīk novērtējumu no raksta
         $deleted = Like::where('post_id', $postId)
             ->where('user_id', $userId)
             ->delete();
+        //Samazina rakstam novērtējumu skaitu statistikā
         $stat =  Statistic::where('post_id', $postId)->first();
         $stat->like -=1;
         $stat->save();
@@ -185,28 +198,15 @@ class PostController extends Controller
             return $this->error([], 'Like removed unsuccessfully', 201);
         }
     }
-
-    public function addPost(StoreRepostRequest $request){
-        $postId = $request['post_id'];
-        $userId = $request['user_id'];
-        $repost = Repost::create([
-            'post_id' => $postId,
-            'user_id' => $userId
-        ]);
-        Log::info('Repost',['repost'=>$repost]);
-        $stat = Statistic::where('post_id', $repost->post_id)->first();
-        $stat->repost += 1;
-        $stat->save();
-        return $this->success([
-            'repost' => $repost
-        ], 'Repost added successfully', 201);
-    }
+    //Funkcija, kas ļauj izdzēst dalīto rakstu
     public function deleteRepost(RemoveRepostRequest $request){
         $postId = $request['post_id'];
         $userId = $request['user_id'];
+        //Izdzēšs dalīto rakstu
         $deleted = Repost::where('post_id', $postId)
             ->where('user_id', $userId)
             ->delete();
+        //Samazina rakstam dalīto rakstu skaitu statistikā
         $stat =  Statistic::where('post_id', $postId)->first();
         $stat->repost -=1;
         $stat->save();
@@ -216,25 +216,18 @@ class PostController extends Controller
             return $this->error([], 'Repost removed unsuccessfully', 201);
         }
     }
-    public function getAllReposts(Request $request){
-        $reposts = Repost::with('post')->get();
-        return $this->success([
-            'reposts' => $reposts
-        ]);
-    }
+    //Funkcija, kas izdzēšs rakstu
     public function deletePost(DeletePostRequest $request)
     {
         $postId = $request->input('post_id');
         $userId = $request->input('user_id');
 
         $post = Post::findOrFail($postId);
-
+        //Pārbauda vai raksta autora id ir vienāds ar pieprasījumā norādīto
         if ($post->user_id === $userId) {
-            
+            //Pārbauda vai ir fails, ja ir tad to izdzēšs
             if ($post->fileName) {
                 $mediaPath = 'public/media/' . $post->fileName;
-                Log::info('FMedia path', ['path' => $mediaPath]);
-                
                 if (Storage::exists($mediaPath)) {
                     Storage::delete($mediaPath);
                     Log::info('File Deleted Successfully', ['path' => $mediaPath]);
@@ -242,21 +235,24 @@ class PostController extends Controller
                     Log::error('File Not Found', ['path' => $mediaPath]);
                 }
             }
-
+            //Idzēšs rakstus un atgriež paziņojumu
             $post->delete();
             return $this->success([], 'Post and associated media removed successfully', 201);
         } else {
             return $this->error([], 'Unauthorized to delete the post', 403);
         }
     }
+    //Funkcija, kas ļauj redzēt viena lietotāja rakstus
     public function getUsersPosts(ShowUsersPosts $request){
         $userId = $request->input('user_id');
+        //Atrod visus rakstus, kuriem autors ir ar $userId
         $posts = Post::select('post.*')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
             ->with(['user', 'statistic', 'comment', 'like'])
             ->where('post.user_id', $userId)
             ->orderByDesc('post.created_at')
             ->get();
+        //Katram rakstam pievieno autoru, autora attēlu un komentārus
         foreach ($posts as $post) {
             $user = $post->user; 
             $profile = $user->profile; 
@@ -265,6 +261,7 @@ class PostController extends Controller
             }
            
             $post->profile = $profile;
+            //Palielina rakstam skatījumu skaitu statistikā
             $stat =  Statistic::where('post_id', $post->id)->first();
             $stat->views +=1;
             $stat->save();
@@ -283,9 +280,10 @@ class PostController extends Controller
         ];
         return $this->success($response);
     }
+    //Funkcija, kas atgriež visus lietotāja dalītos rakstus
     public function getUsersReposts(ShowUsersReposts $request){
         $userId = $request->input('user_id');
-        
+        //Iegūst visus lietotāja dalītos rakstus un sakārto tos pēc jaunākā
         $reposts = Repost::select('repost.*')
             ->leftJoin('post', 'repost.post_id', '=', 'post.id')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
@@ -294,7 +292,7 @@ class PostController extends Controller
             ->orderByDesc('repost.created_at')
             ->get();
     
-        
+        //Pievieno rakstam autoru, autora profilu ar attēlu un komentārus
         foreach ($reposts as $repost) {
             $post = $repost->post;
             $user = $post->user;
@@ -319,7 +317,7 @@ class PostController extends Controller
                 $comment->user = $userC;
                 $comment->profile = $profileC;
             }
-    
+            //Palielina raksta skatījumu skaitu statistikā
             $post->profile = $profile;
             $stat =  Statistic::where('post_id', $post->id)->first();
             $stat->views +=1;
@@ -332,6 +330,7 @@ class PostController extends Controller
     
         return $this->success($response);
     }
+    //Funkcija, kas atgriež rakstus no lietotājiem, kuriem seko
     public function getFollowedPosts(ShowFollowedPosts $request)
     {
         $userId = $request->input('userId');
@@ -339,7 +338,9 @@ class PostController extends Controller
         $followedUsers = Follow::where('follower_id', $userId)->pluck('followed_id')->toArray();
 
         $dayAgo = Carbon::now()->subDay();
-        
+        //Atgriež visus rakstus, kas ir jaunāki par dienu un sakārto tos pēc vecumu
+        // un pēc tā
+        //vai lietotājas ir verificēts
         $posts = Post::select('post.*')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
             ->with(['user', 'statistic', 'comment', 'like'])
@@ -349,7 +350,7 @@ class PostController extends Controller
             ->orderByDesc('profile.verified') 
             ->orderByDesc('post.created_at') 
             ->get();
-
+        //Atgriež visus rakstus, kas ir vecāki par dienu un sakārto tos pēc vecuma
         $olderPosts = Post::select('post.*')
             ->leftJoin('profile', 'post.user_id', '=', 'profile.user_id')
             ->with(['user', 'statistic', 'comment', 'like'])
@@ -358,15 +359,17 @@ class PostController extends Controller
             ->where('post.created_at', '<=', $dayAgo) 
             ->orderByDesc('post.created_at') 
             ->get();
-    
+        //Abus raksta masīvus saliek vienā
         $posts = $posts->merge($olderPosts); 
+        
         foreach ($posts as $post) {
             $user = $post->user; 
             $profile = $user->profile; 
+            //Atrod raksta autora profila attēlu
             if(!filter_var($profile->picture, FILTER_VALIDATE_URL)){
                 $profile->picture = $this->filePath($profile->picture);
             }
-    
+            //Katram raksta komentāram pievieno tā autoru, autora profilu un attēlu
             foreach ($post->comment as $comment) {
                 $userC = $comment->user;
                 $profileC = $userC->profile;
@@ -377,7 +380,7 @@ class PostController extends Controller
                 $comment->profile = $profileC;
             }
     
-            
+            //Palielina rakstam apskatu skaitu statistikā
             $post->profile = $profile;
             $stat =  Statistic::where('post_id', $post->id)->first();
             $stat->views +=1;

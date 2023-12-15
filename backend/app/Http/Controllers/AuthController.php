@@ -13,26 +13,30 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     use HttpResponses;
-
+    //Funkcija, kas nodrošina lietotāja pieslēgšanos
     public function login(LoginUserRequest $request){
         $request->validated($request->all());
         if(!Auth::attempt($request->only(['email', 'password']))){
             return $this->error('','Credintial dont match', 401);
         }
         $user = User::where('email', $request->email)->first();
+        //Tiek izveidots autentifikācijas talons un atgriezts kopā ar lietotāja datiem
         return $this->success([
             'user'=>$user,
             'token'=>$user->createToken('API Token' . $user->name)->plainTextToken
         ]);
     }
+    //Funkcija, kas nodrošina lietotāja reģistrēšanos
     public function register(StoreUserRequest $request){
         $request->validated($request->all());
+        //Izveido jaunu lietotāju
         $user = User::create([
             'name'=>$request->name,
             'email'=>$request->email,
             'password'=>Hash::make($request->password),
             'birthdate'=>$request->birthdate
         ]);
+        //izveido lietotāja profilu
         $profile = Profile::create([
             'user_id'=>$user->id,
             'nickname'=>$user->name,
@@ -40,14 +44,17 @@ class AuthController extends Controller
             'borderColor'=> '#000000',
             'picture'=>'655f7aa731654_1700756135.png'
         ]);
-        
+        //Atgriež lietotāja, profila un autentifikācijas talona datus
         return $this->success([
             'user'=>$user,
             'profile'=>$profile,
             'token'=>$user->createToken('API Token' . $user->name)->plainTextToken
         ]);
     }
-    public function logout(){
-        return response()->json('This is my logout');
+    //Funkcija, kas ļauj atslēgties no sistēmas
+    public function logout(Request $request){
+        $request->user()->currentAccessToken()->delete();
+
+        return $this->success([], 'User logged out successfully');
     }
 }

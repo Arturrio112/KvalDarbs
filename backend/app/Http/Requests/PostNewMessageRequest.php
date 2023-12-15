@@ -8,21 +8,21 @@ use Illuminate\Foundation\Http\FormRequest;
 class PostNewMessageRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Pārbauda vai lietotājs var veikt šo pieprasījumu.
      */
     public function authorize(): bool
     {
         $userId = $this->input('user_id');
         $conversationId = $this->input('conversation_id');
 
-        // Check if there is a corresponding row in user_conversation
+        // Pārbauda vai eksistē saruna
         return UserConversation::where('user_id', $userId)
             ->where('conversation_id', $conversationId)
             ->exists();
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Definēti pieprasījuma datu noteikumi
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */

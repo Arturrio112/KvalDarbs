@@ -1,15 +1,17 @@
 <script setup>
-import { onMounted, ref, computed, onUpdated } from 'vue';
+//Importē funkcijas un komponentes
+import { onMounted,watchEffect, ref, computed, onUpdated } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Message from '../components/Message.vue';
-
+//Definē mainīgos
 const props = defineProps({ convo: Object, userId: Number });
 const userId = props.userId;
 const convo = ref(props.convo);
 const token = localStorage.getItem('authToken')
 const newMessage = ref('');
 const scrollContainer = ref(null);
+//Funkcijas, kas sagatavo vēstules datu pieprasījumam un nosūta
 const sendMessage = async() => {
     if (newMessage.value.trim() !== '') {
         let formData = new FormData();
@@ -31,14 +33,23 @@ const sendMessage = async() => {
         }
     }
 };
+//Funkcijas, kas notin skatu uz leju
 const scrollToBottom = () => {
   if (scrollContainer.value) {
     scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
   }
 };
+//Funkcija, kas seko līdzi mainīgā izmaiņam
+watchEffect(() => {
+    
+    convo.value = props.convo;
+    scrollToBottom();
+});
+//Funkcija, kas nostrādā pievienojot šo komponenti
 onMounted(() => {
   scrollToBottom();
 });
+//Funkcija, kas nostrādā, kad skats tiek atjaunots
 onUpdated(() => {
   scrollToBottom();
 });

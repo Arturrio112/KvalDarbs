@@ -23,9 +23,27 @@ export default {
     this.deleteAuthToken();
   },
   methods: {
+    //Nosūta autentifikācijas talona dzēšanas pieprasījumu, ja talons eksistē
     async deleteAuthToken() {
-        localStorage.removeItem('authToken');
+      const token = localStorage.getItem('authToken');
+        
+        if (token) {
+          try {
+            await axios.post('http://localhost:8000/api/logout', {}, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              withCredentials: true,
+            });
+          } catch (error) {
+            console.error('Error logging out:', error);
+          } finally {
+            console.log('logged out')
+            localStorage.removeItem('authToken');
+          }
+        }
     },
+    //Funkcija, kas nodrošina reģistrācija pieprasījumu
     async handleSubmit(event) {
       event.preventDefault();
       const errorFields = Object.values(this.msg).filter((msg)=> msg !== '')
@@ -55,6 +73,7 @@ export default {
         })
       }
     },
+    //Funkcijas, kas validē mainīgos
     validateEmail(v) {
       if (v === '') {
         this.msg.email = "Provide an email";

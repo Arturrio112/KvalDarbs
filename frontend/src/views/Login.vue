@@ -9,13 +9,29 @@
       };
     },
     created() {
-      // This code will be executed when the component is created
       this.deleteAuthToken();
     },
     methods: {
+      //Idzēš autentifikācijas talonu, ja tas eksistē 
       async deleteAuthToken() {
-        localStorage.removeItem('authToken');
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          axios.post('http://localhost:8000/api/logout', {}, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            withCredentials: true,
+          })
+          .then(() => {
+            console.log('logged out')
+            localStorage.removeItem('authToken');
+          })
+          .catch((error) => {
+            console.error('Error logging out:', error);
+          })
+        }
       },
+      //Funkcija, kas nosūta pieprasījumu, lai pieslēgtos sistēmai
       async handleSubmit(event) {
         event.preventDefault();
           const userData = {
@@ -27,7 +43,6 @@
           })
             .then((res)=>{
               console.log('User loged in successful!', res);
-              console.log('User registration successful!', res.data);
               const token = res.data.data.token
               console.log(token)
               localStorage.setItem('authToken', token)

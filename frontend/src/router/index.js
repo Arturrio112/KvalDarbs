@@ -1,3 +1,4 @@
+//Importē komponentes un funkcijas
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import Signup from "../views/Signup.vue"
@@ -5,6 +6,7 @@ import Login from "../views/Login.vue"
 import Profile from "../views/Profile.vue"
 import Messages from "../views/Messages.vue"
 import Explore from "../views/Explore.vue"
+//Definē lietotņu saskarņu maršrutus
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [

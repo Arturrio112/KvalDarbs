@@ -1,4 +1,5 @@
 <script setup>
+//Importē funkcijas, ikonas un komponentes
   import axios from 'axios'
   import {ref, computed, onMounted, watchEffect} from 'vue'
   import { useRouter, useRoute } from 'vue-router';
@@ -13,6 +14,7 @@
   import Edit from 'vue-material-design-icons/AccountEdit.vue';
   import SearchBar from '../components/SearchBar.vue'
   import Close from 'vue-material-design-icons/Close.vue';
+  //Definē mainīgos
   const authUser= ref(null);
   const loading = ref(true)
   const userDataLoaded = ref(false);
@@ -34,17 +36,20 @@
   const fontColor = ref('');
   const borderColor = ref('')
   const profilePictureInput = ref(null);
+  //Funkcija, kas nostrādā skatam ielādējoties
   onMounted(()=>{
     const token = localStorage.getItem('authToken')
+    //Ja nav autentifikācijas talons, tiek novirzīts uz pieslēgšanaās skatu
     if(!token){
       router.push({
         name: 'login'
       })
+      return
     }
     watchEffect(() => {
       profileId = route.params.id;
-      console.log(profileId);
 
+      //Iegūst lietotāja datus
       axios.get(`http://localhost:8000/api/user-data`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -66,7 +71,7 @@
         console.error('Error fetching data', err);
         loading.value = false;
       });
-      
+      //Iegūst profila datus
       axios.get(`http://localhost:8000/api/profile/${profileId}`,  {
         params:{
           user_id: profileId
@@ -82,6 +87,7 @@
       }).catch((err)=>{
         console.error('Error fetching data', err);
       })
+      //Iegūst profila rakstus
       axios.get(`http://localhost:8000/api/post/user/${profileId}`,{
         params:{
           user_id: profileId
@@ -96,6 +102,7 @@
       }).catch((err)=>{
         console.error('Error fetching data', err);
       })
+      //Iegūst profila dalītos rakstus
       axios.get(`http://localhost:8000/api/repost/user/${profileId}`, {
         params:{
           user_id: profileId
@@ -110,6 +117,7 @@
       }).catch((err)=>{
         console.error('Error fetching data', err);
       })
+      //Iegūst profila attēlu
       if(profile.picture){
         axios.get('http://localhost:8000/api/file',{
             headers:{
@@ -128,11 +136,15 @@
     });
 
   })
+  //Funkcija, kas ļauj izdzēst lietotāju
   async function handleDelete() {
     const token = localStorage.getItem('authToken');
     console.log(userId)
     try {
       const response = await axios.delete(`http://localhost:8000/api/user/${userId}`, {
+        params:{
+          user_id: userId
+        },
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -146,10 +158,12 @@
       console.error('Error deleting user', error);
     }
   }
+  //Funkcija, kas pārbauda vai seko šim profilam
   let isFollowing = computed(() => {
     console.log(profile.value.followers)
     return profile.value.followers.some((followers) =>  followers ? followers.follower_id === userId : false);
   });
+  //Funkcija, kas nodrošina sekošanu
   async function handleFollow() {
     const token = localStorage.getItem('authToken');
     const requestData = {
@@ -188,16 +202,20 @@
         console.error('Error following/unfollowing user', error);
     }
   }
+  //Funkcija, kas aizver un atver opcijas
   const toggleOpenOptions = () => {
     openOptions.value = !openOptions.value;
   }
+  //Funkcija, kas atver un aizver rediģēšanas logu
   const toggleEdit = ()=>{
     openOptions.value=false
     openEdit.value = !openEdit.value
   }
+  //Funkcija, kas nomaina rediģēto attēla failu
   function onProfilePictureChange() {
     editedProfilePicture.value = profilePictureInput.value.files[0];
   }
+  //Funkcija, kas pārbauda vai attēla tips ir atļauts
   const isAllowedType = (type)=>{
     const allowedTypes = ['jpeg', "jpg", 'png', 'gif'];
 
@@ -205,10 +223,12 @@
 
     return allowedTypes.includes(fileExtension);
   }
+  //Funkcija, kas nodrošina, ka var nosūtīt rediģēšanas pieprasījumu
   const handleSubmit =  () =>{
     editProfileErrors.value = []
     handleEdit(profile.value.profile.nickname)
   }
+  //Funkcija, kas nodoršina rediģēšanas datu validāciju un pieprasījuma nosūtīšanu
   function handleEdit(nickname) {
     console.log(nickname)
     editProfileErrors.value = []
@@ -268,6 +288,7 @@
       console.error('Error editing profile', error);
     })
   }
+  //Hex krāsas validēšana
   function isValidHexColor(color) {
     const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
     return hexColorRegex.test(color);

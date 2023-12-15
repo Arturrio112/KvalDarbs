@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 class AddLikeRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Pārbauda vai lietotājs var veikt šo pieprasījumu.
      */
     public function authorize(): bool
     {
@@ -15,7 +15,7 @@ class AddLikeRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Definēti pieprasījuma datu noteikumi
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */

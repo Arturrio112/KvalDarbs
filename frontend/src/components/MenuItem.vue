@@ -1,10 +1,11 @@
 <script setup>
+//Importē funkcijas un ikonas
     import { toRefs } from 'vue'
     import Home from 'vue-material-design-icons/Home.vue';
     import Pound from 'vue-material-design-icons/Pound.vue';
     import EmailOutline from 'vue-material-design-icons/EmailOutline.vue';
     import AccountOutline from 'vue-material-design-icons/AccountOutline.vue';
-
+//Definē mainīgos
     const props = defineProps({
         iconString: String,
     })
@@ -12,7 +13,7 @@
     const { iconString } = toRefs(props)
 
     let icon = null
-
+//Norāda kura ikona tiek parādīta atkarībā pēc padotā teksta
     if (iconString.value === 'Home') icon = Home
     if (iconString.value === 'Explore') icon = Pound
     if (iconString.value === 'Messages') icon = EmailOutline

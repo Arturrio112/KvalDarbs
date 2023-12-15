@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Statistic extends Model
 {
     use HasFactory;
-
+    //Norāda datu bāzes tabulas nosaukumu un aizpildāmos laukus
     protected $fillable =[
         'post_id',
         'comment',
@@ -16,6 +16,7 @@ class Statistic extends Model
         'repost',
         'views'
     ];
+    //Definē relācijas ar citām datu bāzes tabulām
     public function post(){
         return $this->belongsTo(Post::class);
     }

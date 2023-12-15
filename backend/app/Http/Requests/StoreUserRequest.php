@@ -15,7 +15,7 @@ class StoreUserRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Definēti pieprasījuma datu noteikumi
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */

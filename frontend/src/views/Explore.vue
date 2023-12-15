@@ -1,16 +1,24 @@
 <script setup>
+//Improtē funkcijas un ikonas
   import { ref, onMounted } from 'vue';
+  import { useRouter } from 'vue-router';
   import axios from 'axios';
   import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
   import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue';
+  //Definē mainīgos
   const users = ref([]);
   const token = localStorage.getItem('authToken')
+  const router = useRouter();
+  //Funkcijas, kas nostrādā skatam ielādējoties
   onMounted(() => {
+    //Ja nav autentifikācijas talons, tiek novirzīts uz pieslēgšanās skatu
     if(!token){
         router.push({
             name: 'login'
         })
+        return
     }
+    //Pieprasījums, kas iegūst lietotāju datus
     axios.get('http://localhost:8000/api/users', {
         headers: {
         Authorization: `Bearer ${token}`
@@ -18,7 +26,7 @@
     })
     .then(response => {
       users.value = response.data.data.users;
-      console.log(response)
+      
     })
     .catch(error => {
         console.error('Error fetching users:', error);

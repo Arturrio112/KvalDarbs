@@ -8,17 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 class Post extends Model
 {
     use HasFactory;
-
+    //Norāda datu bāzes tabulas nosaukumu un aizpildāmos laukus
     protected $table = 'post';
     protected $fillable =[
         'user_id',
         'text',
         'fileFormat',
         'media',
-        'fileName', // Add this line
+        'fileName', 
         'fileSize',
     ];
-    
+    //Definē relācijas ar citām datu bāzes tabulām 
     public function user(){
         return $this->belongsTo(User::class);
     }

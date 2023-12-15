@@ -8,7 +8,8 @@ use Illuminate\Foundation\Http\FormRequest;
 class AddFollowRequest extends FormRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Pārbauda vai lietotājs var veikt šo pieprasījumu.
+     * Pārbauda vai abi id nav vienādi un vai jau netiek sekots šim lietotājam
      */
     public function authorize(): bool
     {
@@ -25,7 +26,7 @@ class AddFollowRequest extends FormRequest
     }
 
     /**
-     * Get the validation rules that apply to the request.
+     * Definēti pieprasījuma datu noteikumi
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */

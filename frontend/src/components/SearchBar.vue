@@ -1,13 +1,16 @@
 <script setup>
+//Importē funkcijas un ikonas
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import Magnify from 'vue-material-design-icons/Magnify.vue';
 import CheckDecagram from 'vue-material-design-icons/CheckDecagram.vue'
+//Definē mainīgos
 const router = useRouter();
 let searchQuery = ref('');
 let searchResults = ref([]);
 const token = localStorage.getItem('authToken');
+//Funkcija, kas izdara lietotāju meklēšanu
 const performUserSearch = ()=>{
   if(searchQuery!==''){
     axios.get('http://localhost:8000/api/search',{
@@ -25,9 +28,11 @@ const performUserSearch = ()=>{
     })
   }
 }
+//Funkcija, kas izdara funkcija atkarī'ba pēc mainīgā izmaiņas
 watch(searchQuery, () => {
   performUserSearch();
 });
+//Funkcija, kas aizved uz profila skatu
 const handleProfile = (id)=>{
   router.push({name: 'profile', params: {id: id}})
 }

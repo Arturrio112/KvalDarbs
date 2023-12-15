@@ -1,11 +1,13 @@
 <script setup>
+//Importē funkcijas
 import { computed } from 'vue';
-
+//Definē mainīgo
 const props = defineProps({
   message: Object,
   userId: Number
 });
-
+//Funkcijas, kas parāda vai lietotājs, kas izveidojis vēstuli, ir lietoājs,
+//kas skatās vēstuli
 const isCurrentUser = computed(() => props.message.user_id == props.userId);
 </script>
 <template>
