@@ -30,10 +30,7 @@ class PostController extends Controller
     //Funkcija, kas ļauj saglabāt rakstu
     public function store(StorePostRequest $request)
     {
-
         $validatedData = $request->validated();
-
-       
         $fileFormat = '';
         $fileName = ''; 
         $fileSize = 0;  

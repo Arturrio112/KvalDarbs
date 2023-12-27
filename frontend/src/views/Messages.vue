@@ -24,44 +24,40 @@
   const deleteOverlay = ref(false)
   const router = useRouter();
   //Funkcija, kas nostrādā skatam ielādējoties
-  onMounted(()=>{
-    //Ja nav autentifikācijas talons, tiek novirzīts uz pieslēgšanās skatu
-    if(!token){
-      router.push({
-        name: 'login'
-      })
-      return
-    }
-    watchEffect(()=>{
+  onMounted(async ()=>{
+    try {
+       //Ja nav autentifikācijas talons, tiek novirzīts uz pieslēgšanās skatu
+      if (!token) {
+        router.push({
+          name: 'login'
+        });
+        return;
+      }
+
       //Pieprasījums atgriež lietotāja datus
-      axios.get(`http://localhost:8000/api/user-data`, {
+      const userDataResponse = await axios.get(`http://localhost:8000/api/user-data`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
-      }).then((res)=>{
-        user.value=res.data.data.profile
-        userId.value=res.data.data.profile.user_id
-        console.log(user.value, userId.value)
-      }).catch((err)=>{
-        console.error('Error fetching data', err);
-      })
-      //Tiek atgrieztas visas privātās sarunas
-      axios.get(`http://localhost:8000/api/${userId.value}/convo`, {
+      });
+      
+      user.value = userDataResponse.data.data.profile;
+      userId.value = userDataResponse.data.data.profile.user_id;
+
+       //Tiek atgrieztas visas privātās sarunas
+      const convosResponse = await axios.get(`http://localhost:8000/api/${userId.value}/convo`, {
         headers: {
           Authorization: `Bearer ${token}`
         },
-        params:{
+        params: {
           user_id: userId.value
         }
-      }).then((res)=>{
-        console.log(res)
-        convos.value = res.data.data.conversations
-      }).catch((err)=>{
-        console.error('Error fetching data', err);
-      })
-    })
+      });
 
-
+      convos.value = convosResponse.data.data.conversations;
+    } catch (error) {
+      console.error('Error fetching data', error);
+    }
   })
   //Funkcija, kas atver un aizver jaunas sarunas izveides logu
   const toggleNewConvoOverlay = () => {
@@ -128,7 +124,7 @@
     }else{
       newConvoErrors.value.push('Message cannot be empty')
     }
-};
+  };
 //Funkcija, kas atver un aizver dzēšanas apstiprinājuma logu
   const toggleDeleteOverlay = ()=>{
     deleteOverlay.value = !deleteOverlay.value

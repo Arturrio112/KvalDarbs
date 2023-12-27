@@ -59,8 +59,6 @@
         if (res.data.data && res.data.data.profile) {
           authUser.value = res.data.data.profile;
           userId = authUser.value.id
-          console.log(userId)
-          console.log(authUser.value.id)
           userDataLoaded.value = true;
         } else {
           router.push({

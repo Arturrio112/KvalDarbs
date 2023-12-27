@@ -36,77 +36,66 @@
   let showEmojiPicker = ref(false)
   let emojiIndex = new EmojiIndex(data);
   const mentionResults = ref([]);
+  const token = localStorage.getItem('authToken');
   const userId = computed(() => (user.value ? user.value.user_id : null));
   //Funkcija, kas nostrādā skatam ielādējoties
-  onMounted(()=>{
-    const token = localStorage.getItem('authToken')
-    //Ja nav autentifikācijas talons, tad tiek novirzīts uz pieslēgšanās skatu
-    if(!token){
-      router.push({
-        name: 'login'
-      })
-      return
-    }
-    
-    watchEffect(() => {
-      //Iegūst lietotāja datus
-      axios.get('http://localhost:8000/api/user-data', {
+  onMounted(async () => {
+    try {
+      if (!token) {
+        router.push({
+          name: 'login'
+        });
+        return;
+      }
+
+      // Iegūst lietotāja datus
+      const userDataResponse = await axios.get('http://localhost:8000/api/user-data', {
         headers: {
           Authorization: `Bearer ${token}`
         }
-      }).then((res)=>{
-        console.log(res)
-        if(res.data.data && res.data.data.profile){
-          user.value =res.data.data.profile
-          
-          console.log(user.value.id)
-          userDataLoaded.value = true;
-          loading.value = false
-          console.log(user.value)
-        }else{
-          router.push({
-            name: 'login'
-          })
-        }
-        //Iegūst lietotāju, kuriem seko, rakstus
-        axios.get(`http://localhost:8000/api/follow/${user.value.id}`,{
-          params:{
+      });
+
+      const userData = userDataResponse.data.data;
+      if (userData && userData.profile) {
+        user.value = userData.profile;
+        userDataLoaded.value = true;
+
+        // Iegūst lietotāju, kuriem seko, rakstus
+        const followedPostsResponse = await axios.get(`http://localhost:8000/api/follow/${user.value.id}`, {
+          params: {
             userId: user.value.id
           },
           headers: {
             Authorization: `Bearer ${token}`
           }
-        }).then((res)=>{
-          console.log(res)
-          followedPosts.value = res.data.data.posts
-        }).catch((err)=>{
-          console.error('Error fetching data', err)
-        })
-      }).catch((err)=>{
-        console.error('Error fetching data', err)
+        });
+
+        followedPosts.value = followedPostsResponse.data.data.posts;
+
+        // Iegūst visus rakstus
+        const allPostsResponse = await axios.get('http://localhost:8000/api/post', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        posts.value = allPostsResponse.data.data.posts;
+        postsLoaded.value = true;
+      } else {
         router.push({
           name: 'login'
-        })
-        loading.value = false;
-      })
-      //Iegūst visus rakstus
-      axios.get('http://localhost:8000/api/post', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }).then((res)=>{
-        console.log(res.data.data.posts); 
-        let temp = res.data.data.posts
-        console.log(temp)
-        posts.value = res.data.data.posts;
-        console.log(posts.value)
-        postsLoaded.value=true
-      }).catch((err)=>{
-        console.error('Error fetching data', err)
-        loading.value = false;
-      })
-    })
-  }) 
+        });
+      }
+
+      loading.value = false;
+    } catch (error) {
+      console.error('Kļūda datu iegūšanā', error);
+      router.push({
+        name: 'login'
+      });
+      loading.value = false;
+    }
+  });
   //Funkcija, kas noformē raksta lauku 
   const textareaInput = (e)=>{
     const token = localStorage.getItem('authToken')
@@ -114,7 +103,7 @@
     textarea.value.style.height = `${e.target.scrollHeight}px`
     const words = post.value.split(' ');
     const lastWord = words[words.length - 1];
-
+    //Pārbauda vai pēdējais ievadītais vārds sākas ar "@" simbolu
     if (lastWord.startsWith('@') && lastWord.length > 1&&words.length>0) {
       const query = lastWord.substring(1); 
       axios.get('http://localhost:8000/api/search/mention',{ 
@@ -146,7 +135,7 @@
     mentionResults.value = [];
     textarea.value.focus();
   };
-  //Pārbauda vai faila tips ir atļauts
+  //Funkcija, kas pārbauda vai faila tips ir atļauts
   const isAllowedType = (type)=>{
     const allowedTypes = ['jpeg', "jpg", 'png', 'gif'];
 
@@ -192,7 +181,7 @@
   const handleEmojiClick = (emoji) => {
     post.value += emoji.native;
   };
-  //Funkcija, kas noformē raksta datus un nosūta pieprisījumu
+  //Funkcija, kas noformē raksta datus un nosūta pieprisījumu, lai izveidotu jaunu rakstu
   const handlePostSubmit = async () => {
     const token = localStorage.getItem('authToken');
     
@@ -236,6 +225,7 @@
     }).catch((err) => {
         console.error('Error fetching data', err);
         loading.value = false;
+        window.location.reload();
     });
 };
 
@@ -409,6 +399,8 @@
       md:bg-gray-100
       md:bg-opacity-80
       md:p-3
+      overflow-y-scroll
+      no-scrollbar
     ">
       <div class="
         md:max-w-2xl
