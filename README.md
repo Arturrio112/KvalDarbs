@@ -1,7 +1,8 @@
-# KvalDarbs
+# Kvalifikācijas Darbs
 5. semestra kvalifikācijas darbs
+"Sociālā tīkla izstrāde, izmantojot "Laravel" un "Vue.js" ietvarus"
 ## Project Setup
-
+Sākumā izveidot jaunu datu bāzi pgadmin, lai vaŗētu to savienot ar projektu
 ```sh
 frontendam
 1. termināli ierakstīt 'cd frontend'
@@ -13,9 +14,10 @@ backendam
 1. terminālī ierkastīt 'cd backend'
 2. terminālī ierakstīt 'composer install'
 3. terminālī ierakstīt 'cp .env.example .env', lai nokopētu environment failu
-4. .en failā ierkastīt sava pgsql lietotāja paroli
+4. .env failā ierkastīt sava pgsql lietotāja paroli, lietotāja vārdu un datubāzes nosaukumu
 5. terminālī ierakstīt 'php artisan migrate'
 6. terminālī ierakstīt 'php artisan serve'
+7. terminālī ierakstīt 'php artisan storage:link'
 ```
 
 

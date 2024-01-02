@@ -15,7 +15,9 @@ class Profile extends Model
         'user_id',
         'nickname',
         'picture',
-        'verified'
+        'verified',
+        'fontColor',
+        'borderColor'
     ];
     //Definē relācijas ar citām datu bāzes tabulām
     public function user(){
