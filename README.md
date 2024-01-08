@@ -16,8 +16,8 @@ backendam
 3. terminālī ierakstīt 'cp .env.example .env', lai nokopētu environment failu
 4. .env failā ierkastīt sava pgsql lietotāja paroli, lietotāja vārdu un datubāzes nosaukumu
 5. terminālī ierakstīt 'php artisan migrate'
-6. terminālī ierakstīt 'php artisan serve'
-7. terminālī ierakstīt 'php artisan storage:link'
+6. terminālī ierakstīt 'php artisan storage:link'
+7. terminālī ierakstīt 'php artisan serve'
 ```
 
 
