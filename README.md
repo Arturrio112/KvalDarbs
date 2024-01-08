@@ -1,7 +1,7 @@
 # Kvalifikācijas Darbs
 5. semestra kvalifikācijas darbs
 "Sociālā tīkla izstrāde, izmantojot "Laravel" un "Vue.js" ietvarus"
-## Project Setup
+## Projekta palaišanas instrukcija
 Sākumā izveidot jaunu datu bāzi pgadmin, lai vaŗētu to savienot ar projektu
 ```sh
 frontendam
